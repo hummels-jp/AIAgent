@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gemini 公交换乘 Agent</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Gemini 公交地铁换乘 Agent</h1>
+      <p class="desc">输入起点和终点，返回多条公交/地铁换乘路线，并在地图中可视化。</p>
+
+      <form id="route-form" class="card">
+        <div class="field">
+          <label for="origin">起点</label>
+          <input id="origin" name="origin" type="text" placeholder="例如：北京南站" required />
+        </div>
+        <div class="field">
+          <label for="destination">终点</label>
+          <input id="destination" name="destination" type="text" placeholder="例如：国家图书馆" required />
+        </div>
+        <button id="submit-btn" type="submit">查询换乘</button>
+      </form>
+
+      <section class="card">
+        <h2>Agent 建议</h2>
+        <pre id="agent-reply">等待查询...</pre>
+      </section>
+
+      <section class="card">
+        <h2>路线地图</h2>
+        <div id="map"></div>
+      </section>
+
+      <section class="card">
+        <h2>备选路线</h2>
+        <div id="route-list" class="route-list">暂无结果</div>
+      </section>
+    </main>
+
+    <script>
+      window.APP_CONFIG = {
+        googleMapsApiKey: "{{ google_maps_api_key }}",
+      };
+    </script>
+    <script src="/static/app.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=geometry&callback=initMap"></script>
+  </body>
+</html>

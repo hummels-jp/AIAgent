@@ -17,6 +17,7 @@ from urllib3.util.retry import Retry
 
 load_dotenv()
 
+# Gemini 模型配置（通过环境变量覆盖默认值）
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
@@ -46,6 +47,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 def _build_http_session() -> requests.Session:
+    """构建带自动重试能力的 HTTP Session，用于访问第三方天气接口。"""
     retry = Retry(
         total=3,
         connect=3,
@@ -67,10 +69,12 @@ REQUEST_TIMEOUT = (8, 25)
 
 
 class WeatherRequest(BaseModel):
+    """天气查询请求体。"""
     city: str = Field(min_length=1, max_length=80)
 
 
 def _is_llm_quota_error(exc: Exception) -> bool:
+    """判断异常是否属于 LLM 配额/限流相关错误。"""
     message = str(exc).lower()
     quota_keywords = [
         "insufficient_quota",
@@ -83,6 +87,8 @@ def _is_llm_quota_error(exc: Exception) -> bool:
 
 
 def get_current_weather_by_city(city: str) -> Dict[str, Any]:
+    """根据城市名查询 OpenWeather 当前天气，并统一为前端可直接展示的数据结构。"""
+    # 1) 先用地理编码接口把城市名解析成经纬度
     geo_resp = HTTP_SESSION.get(
         "https://api.openweathermap.org/geo/1.0/direct",
         params={"q": city, "limit": 1, "appid": OPENWEATHER_API_KEY},
@@ -98,6 +104,7 @@ def get_current_weather_by_city(city: str) -> Dict[str, Any]:
     lat = location["lat"]
     lon = location["lon"]
 
+    # 2) 再用经纬度查询当前实时天气
     weather_resp = HTTP_SESSION.get(
         "https://api.openweathermap.org/data/2.5/weather",
         params={
@@ -127,6 +134,7 @@ def get_current_weather_by_city(city: str) -> Dict[str, Any]:
     wind_speed_ms = wind_data.get("speed")
     wind_speed_kmh = round(float(wind_speed_ms) * 3.6, 1) if wind_speed_ms is not None else None
 
+    # 3) 统一输出字段，供卡片展示和 Agent 总结复用
     return {
         "city": city,
         "resolved_name": location.get("local_names", {}).get("zh") or location.get("name"),
@@ -143,6 +151,7 @@ def get_current_weather_by_city(city: str) -> Dict[str, Any]:
 
 
 def run_weather_agent(city: str) -> Dict[str, Any]:
+    """运行 Gemini Agent，必要时调用天气工具函数并返回总结文本 + 结构化天气。"""
     tools = [
         {
             "type": "function",
@@ -177,6 +186,7 @@ def run_weather_agent(city: str) -> Dict[str, Any]:
 
     latest_weather: Dict[str, Any] | None = None
 
+    # 最多进行 5 轮工具调用，避免异常情况下无限循环
     for _ in range(5):
         response = client.chat.completions.create(
             model=GEMINI_MODEL,
@@ -192,6 +202,7 @@ def run_weather_agent(city: str) -> Dict[str, Any]:
                 return {"reply": message.content, "weather": latest_weather}
             raise RuntimeError("Gemini 返回为空")
 
+        # 把模型消息补回上下文，便于后续继续对话与工具调用
         messages.append(message.model_dump(exclude_none=True))
 
         for call in tool_calls:
@@ -201,6 +212,7 @@ def run_weather_agent(city: str) -> Dict[str, Any]:
             call_city = args.get("city", city)
             tool_result = get_current_weather_by_city(call_city)
             latest_weather = tool_result
+            # 将工具输出以 tool 角色回传给模型，让模型继续生成总结
             messages.append(
                 {
                     "role": "tool",
@@ -214,11 +226,13 @@ def run_weather_agent(city: str) -> Dict[str, Any]:
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    """WebUI 首页。"""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/api/weather-agent")
 def weather_agent(payload: WeatherRequest):
+    """天气查询主接口：优先走 Gemini Agent，失败时按策略降级。"""
     city = payload.city.strip()
     try:
         result = run_weather_agent(city)
@@ -228,6 +242,7 @@ def weather_agent(payload: WeatherRequest):
     except requests.RequestException as exc:
         raise HTTPException(status_code=502, detail=f"天气服务请求失败: {exc}") from exc
     except Exception as exc:
+        # 若 Gemini 触发配额/限流，自动降级为 OpenWeather 直连，避免前端直接报 500
         if _is_llm_quota_error(exc):
             try:
                 weather = get_current_weather_by_city(city)
