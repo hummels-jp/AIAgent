@@ -3,12 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gemini 公交换乘 Agent</title>
+    <title>MapBox 路径规划</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <main class="container">
-      <h1>Gemini 公交地铁换乘 Agent</h1>
+      <h1>MapBox 路径规划</h1>
       <p class="desc">输入起点和终点，返回多条公交/地铁换乘路线，并在地图中可视化。</p>
 
       <form id="route-form" class="card">
@@ -30,6 +36,12 @@
 
       <section class="card">
         <h2>路线地图</h2>
+        <div class="map-locate-bar">
+          <input id="map-locate-input" type="text" placeholder="输入地址后定位地图，例如：神田駅" />
+          <button id="map-locate-btn" type="button">定位</button>
+        </div>
+        <div id="data-source" class="data-source">数据来源：等待查询</div>
+        <div class="map-hint">鼠标点击地图点位后，可选择“设为起点”或“设为终点”。</div>
         <div id="map"></div>
       </section>
 
@@ -39,12 +51,17 @@
       </section>
     </main>
 
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script>
       window.APP_CONFIG = {
-        googleMapsApiKey: "{{ google_maps_api_key }}",
+        mapboxApiKey: "{{ mapbox_api_key or '' }}",
+        mapillaryApiKey: "{{ mapillary_api_key or '' }}",
       };
     </script>
     <script src="/static/app.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=geometry&callback=initMap"></script>
   </body>
 </html>

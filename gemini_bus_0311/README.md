@@ -1,6 +1,7 @@
 # Gemini Bus & Metro Transfer Agent
 
 基于 Gemini（OpenAI 兼容接口）+ Google Maps Directions API 的公交地铁换乘 Agent：
+- 支持 Mapbox 路径探索回退（Google 无结果时）
 - 输入：起点站、终点站
 - 输出：多条公交/地铁换乘路线（Agent 总结 + 结构化路线）
 - WebUI：地图多线路展示 + 备选路线列表
@@ -10,6 +11,8 @@
 - Python 3.10+
 - `GEMINI_API_KEY`
 - `GOOGLE_MAPS_API_KEY`
+- `MAPBOX_API_KEY`（可选，建议配置）
+- `MAPILLARY_API_KEY`（可选，用于详情页街景预览）
 
 ## 2. 安装依赖
 
@@ -33,6 +36,8 @@ WSL / Linux:
 ```bash
 export GEMINI_API_KEY="你的GeminiKey"
 export GOOGLE_MAPS_API_KEY="你的GoogleMapsKey"
+export MAPBOX_API_KEY="你的MapboxKey"
+export MAPILLARY_API_KEY="你的MapillaryKey"
 ```
 
 可选：复制 `.env.example`，设置模型和端口：
