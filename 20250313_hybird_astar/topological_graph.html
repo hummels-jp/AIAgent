@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>拓扑连通图构建方法 - 可视图与Voronoi图</title>
+    <title><span class="lang-zh">拓扑连通图构建方法 - 可视图与Voronoi图</span> / <span class="lang-jp">トポロジカル接続グラフの構築方法 - 可視グラフとボロノイ図</span> / <span class="lang-en">Topological Connectivity Graph Construction Methods - Visibility Graph and Voronoi Diagram</span></title>
     <style>
         * {
             margin: 0;
@@ -214,39 +214,59 @@
             border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+
+        .lang-en {
+            font-weight: 600;
+            color: #007bff;
+            font-size: 0.95em;
+        }
+
+        .lang-jp {
+            font-weight: 600;
+            color: #e83e8c;
+            font-size: 0.95em;
+        }
+
+        .lang-zh {
+            font-weight: 600;
+            color: #28a745;
+            font-size: 0.95em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>拓扑连通图构建方法</h1>
-            <p>可视图与Voronoi图详解</p>
+            <h1><span class="lang-zh">拓扑连通图构建方法</span> / <span class="lang-jp">トポロジカル接続グラフの構築方法</span> / <span class="lang-en">Topological Connectivity Graph Construction Methods</span></h1>
+            <p><span class="lang-zh">可视图与Voronoi图详解</span> / <span class="lang-jp">可視グラフとボロノイ図の解説</span> / <span class="lang-en">Visibility Graph and Voronoi Diagram Explained</span></p>
         </div>
 
         <div class="content">
             <!-- 拓扑连通图概述 -->
             <div class="section">
-                <h2 class="section-title">拓扑连通图概述</h2>
+                <h2 class="section-title">拓扑连通图概述 / トポロジカル接続グラフの概要 / Topological Connectivity Graph Overview</h2>
                 <div class="description">
-                    <p><strong>拓扑连通图</strong>是机器人路径规划中用于表示环境中自由空间连接关系的数据结构。它将连续的工作空间离散化为图结构，其中节点表示可达位置，边表示可达路径。</p>
-                    
+                    <p class="lang-zh"><strong>拓扑连通图 (Topological Connectivity Graph)</strong>是机器人路径规划中用于表示环境中自由空间连接关系的数据结构。它将连续的工作空间离散化为图结构,其中节点表示可达位置,边表示可达路径。</p>
+                    <p class="lang-en"><strong>Topology Connectivity Graph (トポロジカル接続グラフ)</strong> is a data structure used in robot path planning to represent the connectivity of free space in the environment. It discretizes the continuous workspace into a graph structure, where nodes represent reachable positions and edges represent reachable paths.</p>
+                    <p class="lang-jp"><strong>トポロジカル接続グラフ</strong>は、ロボット経路計画において環境内の自由空間の接続関係を表すデータ構造です。連続する作業空間をグラフ構造に離散化し、ノードは到達可能な位置を、エッジは到達可能なパスを表します。</p>
+
                     <div class="info-box">
-                        <h4>主要特点：</h4>
+                        <h4><span class="lang-zh">主要特点</span> / <span class="lang-jp">主な特徴</span> / <span class="lang-en">Key Features</span>:</h4>
                         <ul>
-                            <li><strong>拓扑结构</strong>：只关心位置之间的连接关系，不关心具体几何形状</li>
-                            <li><strong>连通性</strong>：确保图中任意两个可达节点之间存在路径</li>
-                            <li><strong>完整性</strong>：能够表示环境中的所有可行路径</li>
-                            <li><strong>简洁性</strong>：相比网格表示，大大减少状态空间</li>
+                            <li><span class="lang-zh"><strong>拓扑结构 (Topology / トポロジー)</strong>：只关心位置之间的连接关系，不关心具体几何形状</span> / <span class="lang-jp">位置間の接続関係のみを考慮し、具体的な幾何形状は考慮しません</span> / <span class="lang-en">Only concerns connectivity between positions, not specific geometric shapes</span></li>
+                            <li><span class="lang-zh"><strong>连通性 (Connectivity / 接続性)</strong>：确保图中任意两个可达节点之间存在路径</span> / <span class="lang-jp">グラフ内の任意の到達可能ノード間にパスが存在することを保証</span> / <span class="lang-en">Ensures there is a path between any two reachable nodes in the graph</span></li>
+                            <li><span class="lang-zh"><strong>完整性 (Completeness / 完全性)</strong>：能够表示环境中的所有可行路径</span> / <span class="lang-jp">環境内のすべての実行可能なパスを表現できます</span> / <span class="lang-en">Can represent all feasible paths in the environment</span></li>
+                            <li><span class="lang-zh"><strong>简洁性 (Simplicity / 簡潔性)</strong>：相比网格表示，大大减少状态空间</span> / <span class="lang-jp">グリッド表現と比較して状態空間を大幅に削減</span> / <span class="lang-en">Greatly reduces state space compared to grid representation</span></li>
                         </ul>
                     </div>
 
                     <div class="info-box">
-                        <h4>应用场景：</h4>
+                        <h4><span class="lang-zh">应用场景</span> / <span class="lang-jp">応用シーン</span> / <span class="lang-en">Application Scenarios</span>:</h4>
                         <ul>
-                            <li>室内环境导航（家庭、办公室、仓库）</li>
-                            <li>室外路径规划（城市道路、野外环境）</li>
-                            <li>多机器人协同路径规划</li>
-                            <li>动态环境中的实时路径更新</li>
+                            <li><span class="lang-zh">室内环境导航（家庭、办公室、仓库）</span> / <span class="lang-jp">室内環境ナビゲーション（家庭、オフィス、倉庫）</span> / <span class="lang-en">Indoor environment navigation (home, office, warehouse)</span></li>
+                            <li><span class="lang-zh">室外路径规划（城市道路、野外环境）</span> / <span class="lang-jp">屋外経路計画（都市道路、野外環境）</span> / <span class="lang-en">Outdoor path planning (urban roads, wilderness environments)</span></li>
+                            <li><span class="lang-zh">多机器人协同路径规划</span> / <span class="lang-jp">マルチロボット協調経路計画</span> / <span class="lang-en">Multi-robot collaborative path planning</span></li>
+                            <li><span class="lang-zh">动态环境中的实时路径更新</span> / <span class="lang-jp">動的環境におけるリアルタイム経路更新</span> / <span class="lang-en">Real-time path updates in dynamic environments</span></li>
                         </ul>
                     </div>
                 </div>
@@ -254,75 +274,81 @@
 
             <!-- 可视图部分 -->
             <div class="section">
-                <h2 class="section-title">可视图</h2>
+                <h2 class="section-title"><span class="lang-zh">可视图</span> / <span class="lang-jp">可視グラフ</span> / <span class="lang-en">Visibility Graph</span></h2>
                 <div class="description">
-                    <p><strong>可视图</strong>是一种基于可见性约束的拓扑图构建方法。它将障碍物的顶点作为图的节点，并在所有相互可见的顶点之间建立边连接。</p>
-                    
+                    <p class="lang-zh"><strong>可视图 (Visibility Graph)</strong>是一种基于可见性约束的拓扑图构建方法。它将障碍物的顶点作为图的节点，并在所有相互可见的顶点之间建立边连接。</p>
+                    <p class="lang-en"><strong>Visibility Graph</strong> is a topology graph construction method based on visibility constraints. It takes obstacle vertices as graph nodes and establishes edge connections between all mutually visible vertices.</p>
+                    <p class="lang-jp"><strong>可視グラフ</strong>は、可視性制約に基づくトポロジーグラフ構築方法です。障害物の頂点をグラフのノードとし、相互に可視な頂点間でエッジ接続を確立します。</p>
+
                     <div class="info-box">
-                        <h4>核心思想：</h4>
-                        <p>如果两点之间的连线不与任何障碍物相交，则这两点在可视图中是"可见"的，可以建立连接。这样构建的图中的最短路径就是实际环境中的最短路径。</p>
+                        <h4><span class="lang-zh">核心思想</span> / <span class="lang-jp">核心的アイデア</span> / <span class="lang-en">Core Concept</span>:</h4>
+                        <p class="lang-zh">如果两点之间的连线不与任何障碍物相交，则这两点在可视图中是"可见"的，可以建立连接。这样构建的图中的最短路径就是实际环境中的最短路径。</p>
+                        <p class="lang-en">If the line segment between two points does not intersect any obstacle, then these two points are "visible" in the visibility graph and a connection can be established. The shortest path in the constructed graph is the actual shortest path in the environment.</p>
+                        <p class="lang-jp">2点間の線分がいかなる障害物とも交差しない場合、これら2点は可視グラフで「可視」とみなされ、接続を確立できます。このように構築されたグラフの最短経路は、実際の環境内の最短経路です。</p>
                     </div>
 
                     <div class="formula">
-                        <strong>可见性判断条件：</strong><br>
-                        点P1(x1, y1)和点P2(x2, y2)可见，当且仅当：<br>
-                        ∀ 障碍物边E: segment(P1, P2) ∩ E = ∅
+                        <strong><span class="lang-zh">可见性判断条件</span> / <span class="lang-jp">可視性判断条件</span> / <span class="lang-en">Visibility Judgment Condition</span>:</strong><br>
+                        <span class="lang-zh">点P1(x1, y1)和点P2(x2, y2)可见，当且仅当：</span><br>
+                        <span class="lang-jp">点P1(x1, y1)と点P2(x2, y2)が可視である場合、かつその場合に限り：</span><br>
+                        <span class="lang-en">Points P1(x1, y1) and P2(x2, y2) are visible if and only if:</span><br>
+                        ∀ <span class="lang-zh">障碍物边E</span> <span class="lang-jp">障害物辺E</span> <span class="lang-en">obstacle edge E</span>: segment(P1, P2) ∩ E = ∅
                     </div>
 
-                    <h3 style="color: #667eea; margin: 20px 0 15px;">构建算法步骤：</h3>
+                    <h3 style="color: #667eea; margin: 20px 0 15px;"><span class="lang-zh">构建算法步骤</span> / <span class="lang-jp">構築アルゴリズムステップ</span> / <span class="lang-en">Construction Algorithm Steps</span>:</h3>
                     <div class="step">
-                        <strong>步骤1：提取障碍物顶点</strong><br>
-                        收集所有障碍物的所有顶点，作为图的候选节点
+                        <strong><span class="lang-zh">步骤1：提取障碍物顶点</span> / <span class="lang-jp">ステップ1：障害物頂点の抽出</span> / <span class="lang-en">Step 1: Extract Obstacle Vertices</span></strong><br>
+                        <span class="lang-zh">收集所有障碍物的所有顶点，作为图的候选节点</span> / <span class="lang-jp">すべての障害物のすべての頂点を収集し、グラフの候補ノードとする</span> / <span class="lang-en">Collect all vertices of all obstacles as candidate graph nodes</span>
                     </div>
                     <div class="step">
-                        <strong>步骤2：添加起点和终点</strong><br>
-                        将起点和终点作为额外的节点加入图中
+                        <strong><span class="lang-zh">步骤2：添加起点和终点</span> / <span class="lang-jp">ステップ2：起点と終点の追加</span> / <span class="lang-en">Step 2: Add Start and End Points</span></strong><br>
+                        <span class="lang-zh">将起点和终点作为额外的节点加入图中</span> / <span class="lang-jp">起点と終点を追加ノードとしてグラフに追加</span> / <span class="lang-en">Add start and end points as additional nodes to the graph</span>
                     </div>
                     <div class="step">
-                        <strong>步骤3：判断可见性</strong><br>
-                        对每对顶点，判断它们之间的线段是否与任何障碍物相交
+                        <strong><span class="lang-zh">步骤3：判断可见性</span> / <span class="lang-jp">ステップ3：可視性の判断</span> / <span class="lang-en">Step 3: Judge Visibility</span></strong><br>
+                        <span class="lang-zh">对每对顶点，判断它们之间的线段是否与任何障碍物相交</span> / <span class="lang-jp">頂点の各ペアについて、それら間の線分がいかなる障害物とも交差するかを判断</span> / <span class="lang-en">For each pair of vertices, determine whether the line segment between them intersects any obstacle</span>
                     </div>
                     <div class="step">
-                        <strong>步骤4：建立边连接</strong><br>
-                        如果两点相互可见，则在它们之间建立边，边的权重为欧几里得距离
+                        <strong><span class="lang-zh">步骤4：建立边连接</span> / <span class="lang-jp">ステップ4：エッジ接続の確立</span> / <span class="lang-en">Step 4: Establish Edge Connections</span></strong><br>
+                        <span class="lang-zh">如果两点相互可见，则在它们之间建立边，边的权重为欧几里得距离</span> / <span class="lang-jp">2点が相互に可視である場合、それら間でエッジを確立し、エッジの重みはユークリッド距離</span> / <span class="lang-en">If two points are mutually visible, establish an edge between them with weight as Euclidean distance</span>
                     </div>
                     <div class="step">
-                        <strong>步骤5：路径搜索</strong><br>
-                        使用A*等图搜索算法在构建的可视图中寻找从起点到终点的最短路径
+                        <strong><span class="lang-zh">步骤5：路径搜索</span> / <span class="lang-jp">ステップ5：経路検索</span> / <span class="lang-en">Step 5: Path Search</span></strong><br>
+                        <span class="lang-zh">使用A*等图搜索算法在构建的可视图中寻找从起点到终点的最短路径</span> / <span class="lang-jp">A*などのグラフ探索アルゴリズムを使用し、構築された可視グラフ内で起点から終点までの最短経路を探索</span> / <span class="lang-en">Use A* or other graph search algorithms to find the shortest path from start to end in the constructed visibility graph</span>
                     </div>
 
                     <div class="info-box">
-                        <h4>优点：</h4>
+                        <h4><span class="lang-zh">优点</span> / <span class="lang-jp">長所</span> / <span class="lang-en">Advantages</span>:</h4>
                         <ul>
-                            <li>✓ 能够找到理论上的最短路径</li>
-                            <li>✓ 图的规模相对较小，计算效率高</li>
-                            <li>✓ 适用于多边形障碍物环境</li>
+                            <li>✓ <span class="lang-zh">能够找到理论上的最短路径</span> / <span class="lang-jp">理論上の最短経路を見つけることができる</span> / <span class="lang-en">Can find the theoretically shortest path</span></li>
+                            <li>✓ <span class="lang-zh">图的规模相对较小，计算效率高</span> / <span class="lang-jp">グラフの規模が比較的小さく、計算効率が高い</span> / <span class="lang-en">Graph scale is relatively small with high computational efficiency</span></li>
+                            <li>✓ <span class="lang-zh">适用于多边形障碍物环境</span> / <span class="lang-jp">多角形障害物環境に適している</span> / <span class="lang-en">Suitable for polygonal obstacle environments</span></li>
                         </ul>
-                        <h4 style="margin-top: 10px;">缺点：</h4>
+                        <h4 style="margin-top: 10px;"><span class="lang-zh">缺点</span> / <span class="lang-jp">短所</span> / <span class="lang-en">Disadvantages</span>:</h4>
                         <ul>
-                            <li>✗ 路径可能过于贴近障碍物，不安全</li>
-                            <li>✗ 需要精确的障碍物几何信息</li>
-                            <li>✗ 不考虑运动学约束</li>
+                            <li>✗ <span class="lang-zh">路径可能过于贴近障碍物，不安全</span> / <span class="lang-jp">経路が障害物に過度に近すぎ、安全でない可能性がある</span> / <span class="lang-en">Path may be too close to obstacles, not safe</span></li>
+                            <li>✗ <span class="lang-zh">需要精确的障碍物几何信息</span> / <span class="lang-jp">障害物の正確な幾何情報が必要</span> / <span class="lang-en">Requires precise obstacle geometric information</span></li>
+                            <li>✗ <span class="lang-zh">不考虑运动学约束</span> / <span class="lang-jp">運動学制約を考慮しない</span> / <span class="lang-en">Does not consider kinematic constraints</span></li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="canvas-container">
                     <div class="canvas-wrapper" style="width: 100%;">
-                        <h3>可视图动态演示</h3>
+                        <h3><span class="lang-zh">可视图动态演示</span> / <span class="lang-jp">可視グラフ動的デモ</span> / <span class="lang-en">Visibility Graph Dynamic Demo</span></h3>
                         <canvas id="visibilityCanvas" width="900" height="500"></canvas>
                         <div class="controls">
-                            <button onclick="generateVisibilityGraph()">生成可视图</button>
-                            <button onclick="findPathVisibility()">查找路径</button>
-                            <button onclick="resetVisibility()">重置</button>
-                            <button onclick="addRandomObstacle()">添加障碍物</button>
+                            <button onclick="generateVisibilityGraph()"><span class="lang-zh">生成可视图</span> / <span class="lang-jp">生成可視グラフ</span> / <span class="lang-en">Generate</span></button>
+                            <button onclick="findPathVisibility()"><span class="lang-zh">查找路径</span> / <span class="lang-jp">経路検索</span> / <span class="lang-en">Find Path</span></button>
+                            <button onclick="resetVisibility()"><span class="lang-zh">重置</span> / <span class="lang-jp">リセット</span> / <span class="lang-en">Reset</span></button>
+                            <button onclick="addRandomObstacle()"><span class="lang-zh">添加障碍物</span> / <span class="lang-jp">障害物追加</span> / <span class="lang-en">Add Obstacle</span></button>
                         </div>
                         <div class="legend">
-                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span>起点</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span>终点</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span>障碍物</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span>可见边</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span>最短路径</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span><span class="lang-zh">起点</span> / <span class="lang-jp">起点</span> / <span class="lang-en">Start</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span><span class="lang-zh">终点</span> / <span class="lang-jp">終点</span> / <span class="lang-en">End</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span><span class="lang-zh">障碍物</span> / <span class="lang-jp">障害物</span> / <span class="lang-en">Obstacle</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span><span class="lang-zh">可见边</span> / <span class="lang-jp">可視エッジ</span> / <span class="lang-en">Visible Edge</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span><span class="lang-zh">最短路径</span> / <span class="lang-jp">最短経路</span> / <span class="lang-en">Shortest Path</span></span></div>
                         </div>
                     </div>
                 </div>
@@ -330,87 +356,80 @@
 
             <!-- Voronoi图部分 -->
             <div class="section">
-                <h2 class="section-title">Voronoi图</h2>
+                <h2 class="section-title"><span class="lang-zh">Voronoi图</span> / <span class="lang-jp">ボロノイ図</span> / <span class="lang-en">Voronoi Diagram</span></h2>
                 <div class="description">
-                    <p><strong>Voronoi图</strong>是一种基于距离的划分方法，将平面划分为若干区域，每个区域包含所有距离某个种子点最近的点。在路径规划中，Voronoi图的边线是距离障碍物最远的安全路径。</p>
-                    
+                    <p class="lang-zh"><strong>Voronoi图 (ボロノイ図)</strong>是一种基于距离的划分方法，将平面划分为若干区域，每个区域包含所有距离某个种子点最近的点。在路径规划中，Voronoi图的边线是距离障碍物最远的安全路径。</p>
+                    <p class="lang-en"><strong>Voronoi Diagram</strong> is a distance-based partitioning method that divides the plane into multiple regions, each containing all points closest to a specific seed point. In path planning, the edges of the Voronoi diagram represent the safest paths that are farthest from obstacles.</p>
+                    <p class="lang-jp"><strong>ボロノイ図</strong>は、距離に基づく分割方法で、平面を複数の領域に分割し、各領域は特定のシード点に最も近い点をすべて含みます。経路計画では、ボロノイ図の辺は障害物から最も遠い安全な経路を表します。</p>
+
                     <div class="info-box">
-                        <h4>核心思想：</h4>
-                        <p>Voronoi图由所有到两个或多个障碍物等距的点组成。这些点形成了一条"脊线"，在机器人导航中代表最安全的路径，因为它们距离所有障碍物的距离都相等且最大。</p>
+                        <h4><span class="lang-zh">核心思想：</span> / <span class="lang-jp">核心的アイデア：</span> / <span class="lang-en">Core Concept:</span></h4>
+                        <p class="lang-zh">Voronoi图由所有到两个或多个障碍物等距的点组成。这些点形成了一条"脊线"，在机器人导航中代表最安全的路径，因为它们距离所有障碍物的距离都相等且最大。</p>
                     </div>
 
                     <div class="formula">
-                        <strong>Voronoi定义：</strong><br>
-                        对于障碍物集合O，点P属于障碍物O_i的Voronoi区域，当且仅当：<br>
+                        <strong><span class="lang-zh">Voronoi定义：</span> / <span class="lang-jp">Voronoi定義：</span> / <span class="lang-en">Voronoi Definition:</span></strong><br>
+                        <span class="lang-zh">对于障碍物集合O，点P属于障碍物O_i的Voronoi区域，当且仅当：</span><br>
                         distance(P, O_i) ≤ distance(P, O_j) for all j ≠ i
                     </div>
 
                     <div class="formula">
-                        <strong>Voronoi边（脊线）：</strong><br>
-                        点P位于Voronoi边上，当且仅当：<br>
+                        <strong><span class="lang-zh">Voronoi边（脊线）：</span> / <span class="lang-jp">Voronoi辺（脊線）：</span> / <span class="lang-en">Voronoi Edge (Ridge Line):</span></strong><br>
+                        <span class="lang-zh">点P位于Voronoi边上，当且仅当：</span><br>
                         ∃ i, j: distance(P, O_i) = distance(P, O_j) < distance(P, O_k) for all k ≠ i,j
                     </div>
 
-                    <h3 style="color: #667eea; margin: 20px 0 15px;">构建方法：</h3>
-                    
+                    <h3 style="color: #667eea; margin: 20px 0 15px;"><span class="lang-zh">构建方法：</span> / <span class="lang-jp">構築方法：</span> / <span class="lang-en">Construction Methods:</span></h3>
+
                     <div class="step">
-                        <strong>方法1：离散点法</strong><br>
-                        1. 在环境中均匀采样大量离散点<br>
-                        2. 对每个点，计算到所有障碍物的距离<br>
-                        3. 找到最近和次近的障碍物<br>
-                        4. 如果距离相等（在误差范围内），则该点在Voronoi边上
+                        <strong><span class="lang-zh">方法1：离散点法</span> / <span class="lang-jp">方法1：離散点法</span> / <span class="lang-en">Method 1: Discrete Point Method</span></strong><br>
+                        <span class="lang-zh">1. 在环境中均匀采样大量离散点<br>2. 对每个点，计算到所有障碍物的距离<br>3. 找到最近和次近的障碍物<br>4. 如果距离相等（在误差范围内），则该点在Voronoi边上</span>
                     </div>
 
                     <div class="step">
-                        <strong>方法2：增量法（适用于少量种子点）</strong><br>
-                        1. 从两个种子点开始，构建它们的垂直平分线<br>
-                        2. 逐个添加新种子点，更新Voronoi图<br>
-                        3. 处理新增顶点和边的关系<br>
-                        4. 删除被覆盖的区域
+                        <strong><span class="lang-zh">方法2：增量法（适用于少量种子点）</span> / <span class="lang-jp">方法2：増分法（少数のシード点に適用）</span> / <span class="lang-en">Method 2: Incremental Method (for few seed points)</span></strong><br>
+                        <span class="lang-zh">1. 从两个种子点开始，构建它们的垂直平分线<br>2. 逐个添加新种子点，更新Voronoi图<br>3. 处理新增顶点和边的关系<br>4. 删除被覆盖的区域</span>
                     </div>
 
                     <div class="step">
-                        <strong>方法3：波前扩散法（适用于复杂环境）</strong><br>
-                        1. 从所有障碍物边界同时开始扩散<br>
-                        2. 两个波前相遇的位置就是Voronoi边<br>
-                        3. 三个或多个波前相遇的位置是Voronoi顶点<br>
-                        4. 类似于计算距离变换和提取骨架
+                        <strong><span class="lang-zh">方法3：波前扩散法（适用于复杂环境）</span> / <span class="lang-jp">方法3：波前拡散法（複雑な環境に適用）</span> / <span class="lang-en">Method 3: Wavefront Propagation (for complex environments)</span></strong><br>
+                        <span class="lang-zh">1. 从所有障碍物边界同时开始扩散<br>2. 两个波前相遇的位置就是Voronoi边<br>3. 三个或多个波前相遇的位置是Voronoi顶点<br>4. 类似于计算距离变换和提取骨架</span>
                     </div>
 
                     <div class="info-box">
-                        <h4>优点：</h4>
+                        <h4><span class="lang-zh">优点：</span> / <span class="lang-jp">長所：</span> / <span class="lang-en">Advantages:</span></h4>
                         <ul>
-                            <li>✓ 路径距离障碍物最远，安全性高</li>
-                            <li>✓ 对障碍物形状不敏感，适用性广</li>
-                            <li>✓ 天然提供了多条备选路径</li>
-                            <li>✓ 适用于凸形和凹形障碍物</li>
+                            <li>✓ <span class="lang-zh">路径距离障碍物最远，安全性高</span></li>
+                            <li>✓ <span class="lang-zh">对障碍物形状不敏感，适用性广</span></li>
+                            <li>✓ <span class="lang-zh">天然提供了多条备选路径</span></li>
+                            <li>✓ <span class="lang-zh">适用于凸形和凹形障碍物</span></li>
                         </ul>
-                        <h4 style="margin-top: 10px;">缺点：</h4>
+                        <h4 style="margin-top: 10px;"><span class="lang-zh">缺点：</span> / <span class="lang-jp">短所：</span> / <span class="lang-en">Disadvantages:</span></h4>
                         <ul>
-                            <li>✗ 路径通常不是最短路径</li>
-                            <li>✗ 构建计算复杂度较高</li>
-                            <li>✗ 在狭窄通道中可能不稳定</li>
-                            <li>✗ 生成的路径可能过于曲折</li>
+                            <li>✗ <span class="lang-zh">路径通常不是最短路径</span></li>
+                            <li>✗ <span class="lang-zh">构建计算复杂度较高</span></li>
+                            <li>✗ <span class="lang-zh">在狭窄通道中可能不稳定</span></li>
+                            <li>✗ <span class="lang-zh">生成的路径可能过于曲折</span></li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="canvas-container">
                     <div class="canvas-wrapper" style="width: 100%;">
-                        <h3>Voronoi图动态演示</h3>
+                        <h3><span class="lang-zh">Voronoi图动态演示</span> / <span class="lang-jp">ボロノイ図動的デモ</span> / <span class="lang-en">Voronoi Diagram Dynamic Demo</span></h3>
                         <canvas id="voronoiCanvas" width="900" height="500"></canvas>
                         <div class="controls">
-                            <button onclick="generateVoronoi()">生成Voronoi图</button>
-                            <button onclick="findPathVoronoi()">查找路径</button>
-                            <button onclick="resetVoronoi()">重置</button>
-                            <button onclick="addRandomObstacleVoronoi()">添加障碍物</button>
+                            <button onclick="generateVoronoi()"><span class="lang-zh">生成泰森多边形</span> / <span class="lang-jp">ティッセン多角形生成</span> / <span class="lang-en">Generate</span></button>
+                            <button onclick="findPathVoronoi()"><span class="lang-zh">查找路径</span> / <span class="lang-jp">経路検索</span> / <span class="lang-en">Find Path</span></button>
+                            <button onclick="resetVoronoi()"><span class="lang-zh">重置</span> / <span class="lang-jp">リセット</span> / <span class="lang-en">Reset</span></button>
+                            <button onclick="addRandomObstacleVoronoi()"><span class="lang-zh">添加离散点</span> / <span class="lang-jp">離散点追加</span> / <span class="lang-en">Add Point</span></button>
                         </div>
                         <div class="legend">
-                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span>起点</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span>终点</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span>障碍物</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span>Voronoi边</span></div>
-                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span>路径</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span><span class="lang-zh">起点</span> / <span class="lang-jp">起点</span> / <span class="lang-en">Start</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span><span class="lang-zh">终点</span> / <span class="lang-jp">終点</span> / <span class="lang-en">End</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span><span class="lang-zh">障碍物</span> / <span class="lang-jp">障害物</span> / <span class="lang-en">Obstacle</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span><span class="lang-zh">Voronoi边</span> / <span class="lang-jp">ボロノイエッジ</span> / <span class="lang-en">Voronoi Edge</span></span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span><span class="lang-zh">路径</span> / <span class="lang-jp">経路</span> / <span class="lang-en">Path</span></span></div>
                         </div>
                     </div>
                 </div>
@@ -418,106 +437,108 @@
 
             <!-- 对比总结 -->
             <div class="section">
-                <h2 class="section-title">可视图 vs Voronoi图 对比</h2>
+                <h2 class="section-title"><span class="lang-zh">可视图 vs Voronoi图 对比</span> / <span class="lang-jp">可視グラフ vs ボロノイ図の比較</span> / <span class="lang-en">Visibility Graph vs Voronoi Diagram Comparison</span></h2>
                 <div class="info-box">
                     <table>
                         <tr>
-                            <th>特性</th>
-                            <th>可视图</th>
-                            <th>Voronoi图</th>
+                            <th><span class="lang-zh">特性</span> / <span class="lang-jp">特性</span> / <span class="lang-en">Feature</span></th>
+                            <th><span class="lang-zh">可视图</span> / <span class="lang-jp">可視グラフ</span> / <span class="lang-en">Visibility Graph</span></th>
+                            <th><span class="lang-zh">Voronoi图</span> / <span class="lang-jp">ボロノイ図</span> / <span class="lang-en">Voronoi Diagram</span></th>
                         </tr>
                         <tr>
-                            <td>路径类型</td>
-                            <td>最短路径</td>
-                            <td>安全路径（最大间隙）</td>
+                            <td><span class="lang-zh">路径类型</span> / <span class="lang-jp">経路タイプ</span> / <span class="lang-en">Path Type</span></td>
+                            <td><span class="lang-zh">最短路径</span> / <span class="lang-jp">最短経路</span> / <span class="lang-en">Shortest Path</span></td>
+                            <td><span class="lang-zh">安全路径（最大间隙）</span> / <span class="lang-jp">安全経路（最大隙間）</span> / <span class="lang-en">Safe Path (Max Clearance)</span></td>
                         </tr>
                         <tr style="background: #f8f9fa;">
-                            <td>与障碍物距离</td>
-                            <td>可能非常近</td>
-                            <td>保持最大距离</td>
+                            <td><span class="lang-zh">与障碍物距离</span> / <span class="lang-jp">障害物との距離</span> / <span class="lang-en">Distance to Obstacles</span></td>
+                            <td><span class="lang-zh">可能非常近</span> / <span class="lang-jp">非常に近い可能性あり</span> / <span class="lang-en">May be very close</span></td>
+                            <td><span class="lang-zh">保持最大距离</span> / <span class="lang-jp">最大距離を保持</span> / <span class="lang-en">Maintains maximum distance</span></td>
                         </tr>
                         <tr>
-                            <td>计算复杂度</td>
+                            <td><span class="lang-zh">计算复杂度</span> / <span class="lang-jp">計算複雑度</span> / <span class="lang-en">Computational Complexity</span></td>
                             <td>O(n²)</td>
                             <td>O(n log n) ~ O(n²)</td>
                         </tr>
                         <tr style="background: #f8f9fa;">
-                            <td>障碍物约束</td>
-                            <td>精确几何信息</td>
-                            <td>只需要距离信息</td>
+                            <td><span class="lang-zh">障碍物约束</span> / <span class="lang-jp">障害物制約</span> / <span class="lang-en">Obstacle Constraints</span></td>
+                            <td><span class="lang-zh">精确几何信息</span> / <span class="lang-jp">正確な幾何情報</span> / <span class="lang-en">Precise geometric info</span></td>
+                            <td><span class="lang-zh">只需要距离信息</span> / <span class="lang-jp">距離情報のみ必要</span> / <span class="lang-en">Only distance info needed</span></td>
                         </tr>
                         <tr>
-                            <td>适用环境</td>
-                            <td>多边形障碍物</td>
-                            <td>任意形状障碍物</td>
+                            <td><span class="lang-zh">适用环境</span> / <span class="lang-jp">適用環境</span> / <span class="lang-en">Suitable Environment</span></td>
+                            <td><span class="lang-zh">多边形障碍物</span> / <span class="lang-jp">多角形障害物</span> / <span class="lang-en">Polygonal obstacles</span></td>
+                            <td><span class="lang-zh">任意形状障碍物</span> / <span class="lang-jp">任意形状の障害物</span> / <span class="lang-en">Any shape obstacles</span></td>
                         </tr>
                         <tr style="background: #f8f9fa;">
-                            <td>路径质量</td>
-                            <td>最优（距离）</td>
-                            <td>次优（安全性高）</td>
+                            <td><span class="lang-zh">路径质量</span> / <span class="lang-jp">経路品質</span> / <span class="lang-en">Path Quality</span></td>
+                            <td><span class="lang-zh">最优（距离）</span> / <span class="lang-jp">最適（距離）</span> / <span class="lang-en">Optimal (distance)</span></td>
+                            <td><span class="lang-zh">次优（安全性高）</span> / <span class="lang-jp">次最適（安全性が高い）</span> / <span class="lang-en">Suboptimal (safe)</span></td>
                         </tr>
                         <tr>
-                            <td>实现难度</td>
-                            <td>中等</td>
-                            <td>较高</td>
+                            <td><span class="lang-zh">实现难度</span> / <span class="lang-jp">実装難易度</span> / <span class="lang-en">Implementation Difficulty</span></td>
+                            <td><span class="lang-zh">中等</span> / <span class="lang-jp">中程度</span> / <span class="lang-en">Medium</span></td>
+                            <td><span class="lang-zh">较高</span> / <span class="lang-jp">高い</span> / <span class="lang-en">High</span></td>
                         </tr>
                         <tr style="background: #f8f9fa;">
-                            <td>备选路径</td>
-                            <td>较少</td>
-                            <td>较多</td>
+                            <td><span class="lang-zh">备选路径</span> / <span class="lang-jp">代替経路</span> / <span class="lang-en">Alternative Paths</span></td>
+                            <td><span class="lang-zh">较少</span> / <span class="lang-jp">少ない</span> / <span class="lang-en">Few</span></td>
+                            <td><span class="lang-zh">较多</span> / <span class="lang-jp">多い</span> / <span class="lang-en">Many</span></td>
                         </tr>
                     </table>
                 </div>
 
                 <div class="info-box">
-                    <h4>选择建议：</h4>
+                    <h4><span class="lang-zh">选择建议：</span> / <span class="lang-jp">選択推奨：</span> / <span class="lang-en">Selection Advice:</span></h4>
                     <ul>
-                        <li><strong>使用可视图</strong>：当需要最短路径、障碍物是精确多边形、计算资源充足时</li>
-                        <li><strong>使用Voronoi图</strong>：当需要安全路径、障碍物形状复杂、环境不确定时</li>
-                        <li><strong>混合方法</strong>：先用Voronoi图规划安全走廊，再在走廊内用可视图优化路径</li>
+                        <li><strong><span class="lang-zh">使用可视图</span> / <span class="lang-jp">可視グラフを使用</span> / <span class="lang-en">Use Visibility Graph</span></strong>：<span class="lang-zh">当需要最短路径、障碍物是精确多边形、计算资源充足时</span> / <span class="lang-jp">最短経路が必要で、障害物が正確な多角形であり、計算リソースが十分な場合</span> / <span class="lang-en">When shortest path is needed, obstacles are precise polygons, and computational resources are sufficient</span></li>
+                        <li><strong><span class="lang-zh">使用Voronoi图</span> / <span class="lang-jp">ボロノイ図を使用</span> / <span class="lang-en">Use Voronoi Diagram</span></strong>：<span class="lang-zh">当需要安全路径、障碍物形状复杂、环境不确定时</span> / <span class="lang-jp">安全な経路が必要で、障害物形状が複雑で、環境が不確実な場合</span> / <span class="lang-en">When safe path is needed, obstacle shapes are complex, and environment is uncertain</span></li>
+                        <li><strong><span class="lang-zh">混合方法</span> / <span class="lang-jp">混合方法</span> / <span class="lang-en">Hybrid Method</span></strong>：<span class="lang-zh">先用Voronoi图规划安全走廊，再在走廊内用可视图优化路径</span> / <span class="lang-jp">まずボロノイ図で安全な回廊を計画し、回廊内で可視グラフを使用して経路を最適化する</span> / <span class="lang-en">First use Voronoi diagram to plan safe corridor, then optimize path within corridor using visibility graph</span></li>
                     </ul>
                 </div>
             </div>
 
             <!-- 扩展应用 -->
             <div class="section">
-                <h2 class="section-title">扩展应用</h2>
+                <h2 class="section-title"><span class="lang-zh">扩展应用</span> / <span class="lang-jp">拡張応用</span> / <span class="lang-en">Extended Applications</span></h2>
                 <div class="description">
-                    <p>除了可视图和Voronoi图，还有其他拓扑图构建方法，每种都有其适用场景。</p>
+                    <p class="lang-zh">除了可视图和Voronoi图，还有其他拓扑图构建方法，每种都有其适用场景。</p>
+                    <p class="lang-en">Besides visibility graphs and Voronoi diagrams, there are other topological graph construction methods, each with its own applicable scenarios.</p>
+                    <p class="lang-jp">可視グラフとボロノイ図以外にも、トポロジカルグラフの構築方法があり、それぞれ適用可能なシーンがあります。</p>
                 </div>
 
                 <div class="canvas-container">
                     <div class="canvas-wrapper">
-                        <h3>栅格图</h3>
+                        <h3><span class="lang-zh">栅格图</span> / <span class="lang-jp">グリッド図</span> / <span class="lang-en">Grid Map</span></h3>
                         <canvas id="gridCanvas" width="350" height="300"></canvas>
                         <p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
-                            简单但计算量大
+                            <span class="lang-zh">简单但计算量大</span> / <span class="lang-jp">単純だが計算量が多い</span> / <span class="lang-en">Simple but high computational cost</span>
                         </p>
                     </div>
                     <div class="canvas-wrapper">
-                        <h3>PRM路标图</h3>
+                        <h3><span class="lang-zh">PRM路标图</span> / <span class="lang-jp">PRMランドマークグラフ</span> / <span class="lang-en">PRM Landmark Graph</span></h3>
                         <canvas id="prmCanvas" width="350" height="300"></canvas>
                         <p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
-                            适用于高维空间
+                            <span class="lang-zh">适用于高维空间</span> / <span class="lang-jp">高次元空間に適用可能</span> / <span class="lang-en">Suitable for high-dimensional spaces</span>
                         </p>
                     </div>
                     <div class="canvas-wrapper">
-                        <h3>RRT快速探索树</h3>
+                        <h3><span class="lang-zh">RRT快速探索树</span> / <span class="lang-jp">RRT高速探索木</span> / <span class="lang-en">RRT Rapidly Exploring Tree</span></h3>
                         <canvas id="rrtCanvas" width="350" height="300"></canvas>
                         <p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
-                            适用于复杂动态环境
+                            <span class="lang-zh">适用于复杂动态环境</span> / <span class="lang-jp">複雑な動的環境に適用可能</span> / <span class="lang-en">Suitable for complex dynamic environments</span>
                         </p>
                     </div>
                 </div>
 
                 <div class="info-box" style="margin-top: 30px;">
-                    <h4>其他方法简介：</h4>
+                    <h4><span class="lang-zh">其他方法简介：</span> / <span class="lang-jp">他の方法の概要：</span> / <span class="lang-en">Overview of Other Methods:</span></h4>
                     <ul>
-                        <li><strong>栅格图</strong>：将环境划分为均匀网格，适合简单环境，但状态空间大</li>
-                        <li><strong>PRM</strong>：概率路标图，随机采样构建图，适用于高维配置空间</li>
-                        <li><strong>RRT</strong>：快速探索随机树，通过随机采样快速构建搜索树</li>
-                        <li><strong>Theta*</strong>：基于可视图的改进，允许路径任意穿越网格</li>
-                        <li><strong>导航网格</strong>：将自由空间分割为凸多边形，用于游戏AI</li>
+                        <li><strong><span class="lang-zh">栅格图</span> / <span class="lang-jp">グリッド図</span> / <span class="lang-en">Grid Map</span></strong>：<span class="lang-zh">将环境划分为均匀网格，适合简单环境，但状态空间大</span> / <span class="lang-jp">環境を均一なグリッドに分割し、単純な環境に適しているが、状態空間が大きい</span> / <span class="lang-en">Divides environment into uniform grids, suitable for simple environments but large state space</span></li>
+                        <li><strong><span class="lang-zh">PRM</span> / <span class="lang-jp">PRM</span> / <span class="lang-en">PRM</span></strong>：<span class="lang-zh">概率路标图，随机采样构建图，适用于高维配置空间</span> / <span class="lang-jp">確率的ランドマークグラフ、ランダムサンプリングでグラフを構築し、高次元構成空間に適している</span> / <span class="lang-en">Probabilistic roadmap graph, builds graph with random sampling, suitable for high-dimensional configuration spaces</span></li>
+                        <li><strong><span class="lang-zh">RRT</span> / <span class="lang-jp">RRT</span> / <span class="lang-en">RRT</span></strong>：<span class="lang-zh">快速探索随机树，通过随机采样快速构建搜索树</span> / <span class="lang-jp">高速探索ランダム木、ランダムサンプリングで検索木を高速に構築</span> / <span class="lang-en">Rapidly exploring random tree, builds search tree quickly through random sampling</span></li>
+                        <li><strong><span class="lang-zh">Theta*</span> / <span class="lang-jp">Theta*</span> / <span class="lang-en">Theta*</span></strong>：<span class="lang-zh">基于可视图的改进，允许路径任意穿越网格</span> / <span class="lang-jp">可視グラフに基づく改良版、グリッドを任意に横断する経路を許可</span> / <span class="lang-en">Improvement based on visibility graph, allows paths to arbitrarily traverse grids</span></li>
+                        <li><strong><span class="lang-zh">导航网格</span> / <span class="lang-jp">ナビゲーショングリッド</span> / <span class="lang-en">Navigation Mesh</span></strong>：<span class="lang-zh">将自由空间分割为凸多边形，用于游戏AI</span> / <span class="lang-jp">自由空間を凸多角形に分割し、ゲームAIに使用</span> / <span class="lang-en">Divides free space into convex polygons, used in game AI</span></li>
                     </ul>
                 </div>
             </div>
