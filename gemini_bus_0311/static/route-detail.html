@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>线路详情</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="/static/route-detail.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1 id="title">线路详情</h1>
+      <p id="meta" class="meta">加载中...</p>
+      <p id="source" class="source"></p>
+
+      <section class="card">
+        <h2>路线地图</h2>
+        <div class="playback-controls">
+          <button id="btn-start" type="button">开始</button>
+          <button id="btn-pause" type="button">暂停</button>
+          <button id="btn-reset" type="button">重置</button>
+          <button id="btn-street-auto" type="button">街景自动联动：关</button>
+          <div class="mode-picker" aria-label="模拟模式选择">
+            <button id="btn-mode-walk" type="button">模拟步行视角（10KM/h，视高170cm）</button>
+            <button id="btn-mode-drive" type="button">模拟行车视角（30KM/h，视高100cm）</button>
+          </div>
+        </div>
+        <div class="progress-wrap" aria-label="步骤进度">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="progress-text" class="progress-text">进度：0 / 0</div>
+        <div class="map-layout">
+          <div id="map"></div>
+          <aside class="street-panel">
+            <h3>街景预览</h3>
+            <div id="street-status" class="street-status street-status-pending">街景源：初始化中...</div>
+            <div class="overview-wrap">
+              <div class="overview-title">全局鸟瞰</div>
+              <div id="overview-map" aria-label="全局鸟瞰地图"></div>
+              <div id="overview-meta" class="overview-meta">车辆位置：等待同步</div>
+            </div>
+            <div id="street-preview-stack" class="street-preview-stack">
+              <iframe id="street-preview-a" class="street-preview-frame active" title="街景预览A" loading="lazy"></iframe>
+              <iframe id="street-preview-b" class="street-preview-frame" title="街景预览B" loading="lazy"></iframe>
+            </div>
+            <a id="street-external" class="street-external" href="#" target="_blank" rel="noopener noreferrer">在新标签页查看街景</a>
+          </aside>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>步骤明细</h2>
+        <div id="steps">暂无步骤</div>
+      </section>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="/static/route-detail.js"></script>
+  </body>
+</html>

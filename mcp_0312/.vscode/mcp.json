@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "weather": {
+      "type": "stdio",
+      "command": "/home/kotei/miniconda3/envs/gsplat/bin/python",
+      "args": [
+        "${workspaceFolder}/weather_server.py"
+      ]
+    }
+  }
+}
