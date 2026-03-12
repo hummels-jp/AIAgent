@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijkstra 算法详解</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section p {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .multi-lang {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+
+        .multi-lang-zh {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .multi-lang-en {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+
+        .multi-lang-ja {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .demo-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .graph-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .graph-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-panel {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            min-width: 300px;
+        }
+
+        .info-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .distance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .distance-table th,
+        .distance-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+
+        .distance-table th {
+            background: #667eea;
+            color: white;
+        }
+
+        .distance-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .current-node {
+            background: #FFD700 !important;
+        }
+
+        .visited-node {
+            background: #87CEEB !important;
+        }
+
+        .path-node {
+            background: #9C27B0 !important;
+            color: white !important;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .speed-control label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .speed-control select {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        @media (max-width: 768px) {
+            .graph-container {
+                flex-direction: column;
+            }
+
+            .demo-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Dijkstra 算法详解 / Dijkstra's Algorithm Explained / Dijkstraアルゴリズム詳解</h1>
+            <p>Dijkstra's Algorithm - 经典的图最短路径算法 / Classic Graph Shortest Path Algorithm / グラフ最短経路アルゴリズム（10个顶点示例 / 10 Vertices Example / 10頂点の例）</p>
+        </div>
+
+        <div class="content">
+            <!-- 算法简介 -->
+            <div class="section" id="intro">
+                <h2>📖 算法简介 / Algorithm Introduction / アルゴリズム紹介</h2>
+
+                <div class="multi-lang">
+                    <div class="multi-lang-zh"><strong>Dijkstra 算法</strong>（中文名：迪杰斯特拉算法）是由荷兰计算机科学家艾兹赫尔·戴克斯特拉（Edsger W. Dijkstra）在1956年提出的一种图搜索算法。</div>
+                    <div class="multi-lang-en"><strong>Dijkstra's Algorithm</strong> is a graph search algorithm proposed by Dutch computer scientist Edsger W. Dijkstra in 1956.</div>
+                    <div class="multi-lang-ja"><strong>Dijkstra（ダイクストラ）アルゴリズム</strong>は、オランダの計算機科学者エドガー・ダイクストラ（Edsger W. Dijkstra）が1956年に提案したグラフ探索アルゴリズムです。</div>
+                </div>
+
+                <div class="multi-lang">
+                    <div class="multi-lang-zh">该算法用于解决<strong>单源最短路径问题</strong>，即在给定一个带权重的有向图或无向图中，找到从给定起点到其他所有顶点的最短路径。Dijkstra 算法是图论中最经典、应用最广泛的算法之一。</div>
+                    <div class="multi-lang-en">This algorithm is used to solve the <strong>single-source shortest path problem</strong>, which is to find the shortest path from a given starting point to all other vertices in a weighted directed or undirected graph. Dijkstra's algorithm is one of the most classic and widely used algorithms in graph theory.</div>
+                    <div class="multi-lang-ja">このアルゴリズムは<strong>単一始点最短経路問題</strong>を解くために使用されます。つまり、重み付き有向グラフまたは無向グラフにおいて、指定された始点から他のすべての頂点への最短経路を見つけることです。Dijkstraアルゴリズムはグラフ理論における最も古典的で広く使用されているアルゴリズムの1つです。</div>
+                </div>
+            </div>
+
+            <!-- 基本思想 -->
+            <div class="section" id="idea">
+                <h2>💡 基本思想 / Basic Idea / 基本的な考え方</h2>
+
+                <div class="multi-lang">
+                    <div class="multi-lang-zh">Dijkstra 算法采用<strong>贪心策略</strong>，通过逐步扩展的方式找到最短路径。其核心思想可以概括为以下几个要点：</div>
+                    <div class="multi-lang-en">Dijkstra's algorithm uses a <strong>greedy strategy</strong> to find the shortest path through progressive expansion. Its core idea can be summarized in the following key points:</div>
+                    <div class="multi-lang-ja">Dijkstraアルゴリズムは<strong>貪欲戦略</strong>を採用し、段階的な拡張によって最短経路を見つけます。その核心的な考え方は以下の要点に要約できます：</div>
+                </div>
+
+                <div class="demo-section">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">核心步骤 / Core Steps / 主要な手順</h3>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>1. 初始化</strong>：将起点到自己的距离设为 0，到其他所有顶点的距离设为无穷大（∞）。</div>
+                        <div class="multi-lang-en"><strong>1. Initialization</strong>: Set the distance from the start point to itself as 0, and the distance to all other vertices as infinity (∞).</div>
+                        <div class="multi-lang-ja"><strong>1. 初期化</strong>：始点から自分自身への距離を0に、他のすべての頂点への距離を無限大（∞）に設定します。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>2. 选择当前顶点</strong>：从未被访问过的顶点中，选择距离起点最近的顶点作为当前顶点。</div>
+                        <div class="multi-lang-en"><strong>2. Select Current Vertex</strong>: From the unvisited vertices, select the vertex closest to the start point as the current vertex.</div>
+                        <div class="multi-lang-ja"><strong>2. 現在の頂点を選択</strong>：未訪問の頂点の中から、始点に最も近い頂点を現在の頂点として選択します。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>3. 更新邻居距离</strong>：遍历当前顶点的所有邻居，如果通过当前顶点到邻居的距离小于之前记录的距离，则更新邻居的距离和前驱节点。</div>
+                        <div class="multi-lang-en"><strong>3. Update Neighbor Distances</strong>: Traverse all neighbors of the current vertex. If the distance to a neighbor through the current vertex is less than the previously recorded distance, update the neighbor's distance and predecessor node.</div>
+                        <div class="multi-lang-ja"><strong>3. 隣接ノードの距離を更新</strong>：現在の頂点のすべての隣接ノードを走査し、現在の頂点を通って隣接ノードに到達する距離が以前に記録された距離より小さい場合、その距離と前駆ノードを更新します。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>4. 标记已访问</strong>：将当前顶点标记为已访问，之后不再作为当前顶点考虑。</div>
+                        <div class="multi-lang-en"><strong>4. Mark as Visited</strong>: Mark the current vertex as visited; it will no longer be considered as a current vertex.</div>
+                        <div class="multi-lang-ja"><strong>4. 訪問済みとしてマーク</strong>：現在の頂点を訪問済みとしてマークし、以降は現在の頂点として考慮されません。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>5. 重复步骤</strong>：重复步骤 2-4，直到所有顶点都被访问，或找到目标顶点。</div>
+                        <div class="multi-lang-en"><strong>5. Repeat Steps</strong>: Repeat steps 2-4 until all vertices have been visited or the target vertex is found.</div>
+                        <div class="multi-lang-ja"><strong>5. 手順を繰り返す</strong>：すべての頂点が訪問されるか、ターゲット頂点が見つかるまで、手順2-4を繰り返します。</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">为什么有效？/ Why Effective? / なぜ有効なのか？</h3>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>贪心选择</strong>：每次都选择距离最近的顶点，确保已经找到的路径是最优的。</div>
+                        <div class="multi-lang-en"><strong>Greedy Selection</strong>: Always choose the vertex with the closest distance, ensuring that the path found is optimal.</div>
+                        <div class="multi-lang-ja"><strong>貪欲な選択</strong>：常に最も近い距離の頂点を選択することで、見つけられた経路が最適であることを保証します。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>最优子结构</strong>：从起点到某个顶点的最短路径，也包含了路径中间所有顶点的最短路径。</div>
+                        <div class="multi-lang-en"><strong>Optimal Substructure</strong>: The shortest path from the start point to a vertex also includes the shortest paths to all intermediate vertices on that path.</div>
+                        <div class="multi-lang-ja"><strong>最適部分構造</strong>：始点からある頂点への最短経路には、その経路上のすべての中間頂点への最短経路も含まれています。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>无后效性</strong>：一旦顶点被标记为已访问，它的最短距离就不会再改变。</div>
+                        <div class="multi-lang-en"><strong>No Aftereffect</strong>: Once a vertex is marked as visited, its shortest distance will never change again.</div>
+                        <div class="multi-lang-ja"><strong>後効果性なし</strong>：頂点が訪問済みとしてマークされると、その最短距離は二度と変わりません。</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">重要限制 / Important Limitations / 重要な制限</h3>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>非负权重</strong>：Dijkstra 算法要求所有边的权重必须是非负的。如果存在负权边，算法可能得到错误结果。</div>
+                        <div class="multi-lang-en"><strong>Non-negative Weights</strong>: Dijkstra's algorithm requires that all edge weights must be non-negative. If there are negative weight edges, the algorithm may produce incorrect results.</div>
+                        <div class="multi-lang-ja"><strong>非負の重み</strong>：Dijkstraアルゴリズムは、すべてのエッジの重みが非負であることを要求します。負の重みを持つエッジが存在する場合、アルゴリズムは間違った結果を生じる可能性があります。</div>
+                    </div>
+
+                    <div class="multi-lang">
+                        <div class="multi-lang-zh"><strong>单源最短路</strong>：Dijkstra 只能计算从一个起点到其他所有顶点的最短路径，不能直接计算任意两点之间的最短路径。</div>
+                        <div class="multi-lang-en"><strong>Single-source Shortest Path</strong>: Dijkstra can only calculate the shortest paths from one starting point to all other vertices, not directly calculate the shortest path between any two points.</div>
+                        <div class="multi-lang-ja"><strong>単一始点最短経路</strong>：Dijkstraは1つの始点から他のすべての頂点への最短経路のみを計算でき、任意の2点間の最短経路を直接計算することはできません。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 动态演示 -->
+            <div class="section" id="demo">
+                <h2>🎮 动态演示 / Interactive Demo / インタラクティブデモ</h2>
+                <div class="demo-section">
+                    <div class="demo-controls">
+                        <button class="btn" id="setStartBtn" onclick="setMode('start')">🟢 设置起点 / Set Start / 始点設定</button>
+                        <button class="btn" id="setEndBtn" onclick="setMode('end')">🔴 设置终点 / Set End / 終点設定</button>
+                        <button class="btn" onclick="startSearch()">▶️ 开始搜索 / Start Search / 検索開始</button>
+                        <button class="btn btn-reset" onclick="generateGraph()">🎲 生成新图 / Generate New Graph / 新しいグラフ生成</button>
+                        <button class="btn btn-clear" onclick="clearPath()">🗑️ 清除路径 / Clear Path / 経路クリア</button>
+                    </div>
+
+                    <div class="speed-control">
+                        <label>演示速度 / Demo Speed / デモ速度：</label>
+                        <select id="speedSelect" onchange="updateSpeed()">
+                            <option value="800">慢速 (800ms) / Slow (800ms) / 遅い (800ms)</option>
+                            <option value="200" selected>正常 (200ms) / Normal (200ms) / 普通 (200ms)</option>
+                            <option value="50">快速 (50ms) / Fast (50ms) / 速い (50ms)</option>
+                            <option value="10">极速 (10ms) / Ultra Fast (10ms) / 超高速 (10ms)</option>
+                        </select>
+                    </div>
+
+                    <div class="graph-container">
+                        <div class="graph-wrapper">
+                            <canvas id="graphCanvas" width="600" height="600"></canvas>
+                            <div class="legend">
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #4CAF50;"></div>
+                                    <span>起点 / Start / 始点</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #F44336;"></div>
+                                    <span>终点 / End / 終点</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #FFD700;"></div>
+                                    <span>当前节点 / Current / 現在の頂点</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #87CEEB;"></div>
+                                    <span>已访问 / Visited / 訪問済み</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #9C27B0;"></div>
+                                    <span>最短路径 / Shortest Path / 最短経路</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-panel">
+                            <h3>📊 搜索统计 / Search Statistics / 検索統計</h3>
+                            <div class="info-item">
+                                <span class="info-label">已访问节点 / Visited Nodes / 訪問済みノード：</span>
+                                <span class="info-value" id="visitedCount">0 / 10</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">路径长度 / Path Length / 経路長：</span>
+                                <span class="info-value" id="pathLength">0</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">搜索时间 / Search Time / 検索時間：</span>
+                                <span class="info-value" id="searchTime">0 ms</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">当前节点 / Current Node / 現在の頂点：</span>
+                                <span class="info-value" id="currentNode">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">状态 / Status / ステータス：</span>
+                                <span class="info-value" id="status">准备就绪 / Ready / 準備完了</span>
+                            </div>
+
+                            <h3 style="margin-top: 20px;">📋 距离表 / Distance Table / 距離テーブル</h3>
+                            <table class="distance-table">
+                                <thead>
+                                    <tr>
+                                        <th>节点 / Node / 頂点</th>
+                                        <th>距离 / Distance / 距離</th>
+                                        <th>前驱 / Predecessor / 前駆</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="distanceTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const NUM_NODES = 10;
+        const CANVAS_SIZE = 600;
+        const NODE_RADIUS = 25;
+        const CENTER_RADIUS = 220;
+
+        let canvas;
+        let ctx;
+        let nodes = [];
+        let edges = [];
+        let distances = {};
+        let previous = {};
+        let visited = new Set();
+        let shortestPath = [];
+        let isSearching = false;
+        let searchDelay = 200;
+        let currentNode = null;
+        let startNodeId = 'A';
+        let endNodeId = 'J';
+        let currentMode = 'none';
+
+        // 页面加载完成后初始化
+        window.onload = function() {
+            console.log('=== 页面加载完成 ===');
+
+            try {
+                canvas = document.getElementById('graphCanvas');
+                if (!canvas) {
+                    throw new Error('Canvas 元素未找到');
+                }
+
+                console.log('Canvas 元素:', canvas);
+
+                ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    throw new Error('Canvas 上下文获取失败');
+                }
+
+                console.log('Canvas 上下文:', ctx);
+                console.log('Canvas 尺寸:', canvas.width, 'x', canvas.height);
+
+                // 设置 Canvas 点击事件监听器
+                canvas.addEventListener('click', function(e) {
+                    if (isSearching || currentMode === 'none') return;
+
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const clickedNode = getNodeAtPosition(x, y);
+
+                    if (!clickedNode) return;
+
+            if (currentMode === 'start') {
+                startNodeId = clickedNode.id;
+                console.log('起点设置为:', startNodeId);
+                clearPath();
+                updateStatus(`起点已设置为 / Start set to / 始点が設定されました ${startNodeId}`);
+                resetModeButtons();
+            } else if (currentMode === 'end') {
+                endNodeId = clickedNode.id;
+                console.log('终点设置为:', endNodeId);
+                clearPath();
+                updateStatus(`终点已设置为 / End set to / 終点が設定されました ${endNodeId}`);
+                resetModeButtons();
+            }
+        });
+
+                // 延迟一下确保一切准备就绪
+                setTimeout(function() {
+                    console.log('=== 开始生成图 ===');
+                    generateGraph();
+                }, 100);
+
+            } catch (error) {
+                console.error('初始化错误:', error);
+                alert('初始化失败: ' + error.message);
+            }
+        };
+
+        // 生成随机图
+        function generateGraph() {
+            console.log('=== generateGraph 开始 ===');
+            
+            if (isSearching) {
+                console.log('正在搜索中，跳过');
+                return;
+            }
+            
+            // 清空数据
+            nodes = [];
+            edges = [];
+            distances = {};
+            previous = {};
+            visited = new Set();
+            shortestPath = [];
+            currentNode = null;
+            
+            const centerX = CANVAS_SIZE / 2;
+            const centerY = CANVAS_SIZE / 2;
+            
+            // 生成节点（圆形分布）
+            console.log('生成节点...');
+            for (let i = 0; i < NUM_NODES; i++) {
+                const angle = (2 * Math.PI * i) / NUM_NODES - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * CENTER_RADIUS;
+                const y = centerY + Math.sin(angle) * CENTER_RADIUS;
+                
+                nodes.push({
+                    id: String.fromCharCode(65 + i),
+                    x: x,
+                    y: y
+                });
+                
+                distances[nodes[i].id] = Infinity;
+                previous[nodes[i].id] = null;
+            }
+            
+            console.log('已生成', nodes.length, '个节点');
+            
+            // 生成边（确保图是连通的）
+            console.log('生成边...');
+            // 每个节点至少连接到下一个节点
+            for (let i = 0; i < NUM_NODES; i++) {
+                const next = (i + 1) % NUM_NODES;
+                const weight = Math.floor(Math.random() * 10) + 1;
+                edges.push({
+                    from: nodes[i].id,
+                    to: nodes[next].id,
+                    weight: weight
+                });
+            }
+            
+            // 随机添加额外的边
+            for (let i = 0; i < NUM_NODES; i++) {
+                for (let j = i + 2; j < NUM_NODES; j++) {
+                    if (Math.random() < 0.4) {
+                        const weight = Math.floor(Math.random() * 10) + 1;
+                        edges.push({
+                            from: nodes[i].id,
+                            to: nodes[j].id,
+                            weight: weight
+                        });
+                    }
+                }
+            }
+            
+            console.log('已生成', edges.length, '条边');
+            
+            // 重置起点距离
+            distances[startNodeId] = 0;
+
+            // 绘制图
+            console.log('=== 准备绘制图 ===');
+            drawGraph();
+            updateDistanceTable();
+            updateStatus('已生成新图 / New graph generated / 新しいグラフが生成されました，点击"开始搜索"观看算法执行 / Click "Start Search" to watch the algorithm / 「検索開始」をクリックしてアルゴリズムを確認してください');
+        }
+
+        // 绘制图
+        function drawGraph() {
+            console.log('=== drawGraph 开始 ===');
+            console.log('节点数:', nodes.length, '边数:', edges.length);
+            
+            if (!ctx) {
+                console.error('Canvas 上下文不存在');
+                return;
+            }
+            
+            // 清空画布并绘制白色背景
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            
+            console.log('已清空画布');
+            
+            // 绘制边
+            console.log('绘制边...');
+            edges.forEach((edge, index) => {
+                const fromNode = nodes.find(n => n.id === edge.from);
+                const toNode = nodes.find(n => n.id === edge.to);
+                
+                if (!fromNode || !toNode) {
+                    console.error('找不到节点:', edge);
+                    return;
+                }
+                
+                let color = '#999';
+                let lineWidth = 2;
+                
+                // 检查是否在路径中
+                if (shortestPath.length > 1) {
+                    for (let i = 0; i < shortestPath.length - 1; i++) {
+                        if ((edge.from === shortestPath[i] && edge.to === shortestPath[i + 1]) ||
+                            (edge.to === shortestPath[i] && edge.from === shortestPath[i + 1])) {
+                            color = '#9C27B0';
+                            lineWidth = 5;
+                            break;
+                        }
+                    }
+                }
+                
+                drawEdge(fromNode, toNode, edge.weight, color, lineWidth);
+            });
+            
+            // 绘制节点
+            console.log('绘制节点...');
+            nodes.forEach(node => {
+                let color = '#ffffff';
+                let borderColor = '#333333';
+                let borderWidth = 2;
+                let radius = NODE_RADIUS;
+                
+                if (node.id === startNodeId) {
+                    color = '#4CAF50';
+                    borderColor = '#2E7D32';
+                } else if (node.id === endNodeId) {
+                    color = '#F44336';
+                    borderColor = '#C62828';
+                } else if (node.id === currentNode) {
+                    color = '#FFD700';
+                    borderColor = '#FFA000';
+                    radius = NODE_RADIUS + 5;
+                } else if (visited.has(node.id)) {
+                    color = '#87CEEB';
+                    borderColor = '#039BE5';
+                }
+                
+                drawNode(node, color, borderColor, borderWidth, radius);
+            });
+            
+            console.log('=== drawGraph 完成 ===');
+        }
+
+        // 绘制边
+        function drawEdge(fromNode, toNode, weight, color, lineWidth) {
+            ctx.beginPath();
+            ctx.moveTo(fromNode.x, fromNode.y);
+            ctx.lineTo(toNode.x, toNode.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+            
+            // 绘制权重标签背景
+            const midX = (fromNode.x + toNode.x) / 2;
+            const midY = (fromNode.y + toNode.y) / 2;
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(midX, midY, 15, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 绘制权重标签边框
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // 绘制权重文字
+            ctx.fillStyle = '#333333';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(weight.toString(), midX, midY);
+        }
+
+        // 绘制节点
+        function drawNode(node, color, borderColor, borderWidth, radius) {
+            // 绘制圆形
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // 绘制边框
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = borderWidth;
+            ctx.stroke();
+            
+            // 绘制节点标签
+            ctx.fillStyle = '#333333';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.id, node.x, node.y);
+        }
+
+        // 开始搜索
+        async function startSearch() {
+            if (isSearching) return;
+            
+            console.log('=== startSearch 开始 ===');
+            
+            isSearching = true;
+            const startTime = performance.now();
+            
+            // 重置状态
+            distances = {};
+            previous = {};
+            visited = new Set();
+            shortestPath = [];
+            currentNode = null;
+            
+            nodes.forEach(node => {
+                distances[node.id] = Infinity;
+                previous[node.id] = null;
+            });
+            
+            distances[startNodeId] = 0;
+            
+            const pq = [];
+            pq.push({ id: startNodeId, dist: 0 });
+            
+            let found = false;
+            let stepCount = 0;
+            
+            while (pq.length > 0) {
+                stepCount++;
+                pq.sort((a, b) => a.dist - b.dist);
+                const current = pq.shift();
+                
+                if (visited.has(current.id)) continue;
+                visited.add(current.id);
+                currentNode = current.id;
+                
+                console.log(`步骤 ${stepCount}: 访问节点 ${current.id}, 距离: ${current.dist}`);
+
+                updateStatus(`正在访问节点 / Visiting node / 頂点を訪問中 ${current.id}`);
+                document.getElementById('currentNode').textContent = current.id;
+                document.getElementById('visitedCount').textContent = `${visited.size} / ${NUM_NODES}`;
+
+                if (current.id === endNodeId) {
+                    found = true;
+                    console.log('找到终点！');
+                    break;
+                }
+                
+                // 获取当前节点的邻居
+                const neighbors = edges
+                    .filter(e => e.from === current.id || e.to === current.id)
+                    .map(e => ({
+                        id: e.from === current.id ? e.to : e.from,
+                        weight: e.weight
+                    }));
+                
+                for (let neighbor of neighbors) {
+                    if (visited.has(neighbor.id)) continue;
+                    
+                    const newDist = distances[current.id] + neighbor.weight;
+                    if (newDist < distances[neighbor.id]) {
+                        distances[neighbor.id] = newDist;
+                        previous[neighbor.id] = current.id;
+                        pq.push({ id: neighbor.id, dist: newDist });
+                    }
+                }
+                
+                drawGraph();
+                updateDistanceTable();
+                await sleep(searchDelay);
+            }
+            
+            const endTime = performance.now();
+            document.getElementById('searchTime').textContent = `${(endTime - startTime).toFixed(2)} ms`;
+
+            if (found) {
+                updateStatus('找到最短路径！/ Shortest path found! / 最短経路が見つかりました！');
+                reconstructPath();
+            } else {
+                updateStatus('无法到达终点 / Cannot reach end point / 終点に到達できません');
+            }
+            
+            isSearching = false;
+            console.log('=== startSearch 完成 ===');
+        }
+
+        // 重建路径
+        function reconstructPath() {
+            console.log('=== reconstructPath 开始 ===');
+            
+            let current = endNodeId;
+            shortestPath = [];
+            
+            while (current !== null) {
+                shortestPath.push(current);
+                current = previous[current];
+            }
+            
+            shortestPath.reverse();
+            console.log('最短路径:', shortestPath.join(' -> '));
+            document.getElementById('pathLength').textContent = distances[endNodeId];
+            
+            drawGraph();
+            updateDistanceTable();
+        }
+
+        // 清除路径
+        function clearPath() {
+            if (isSearching) return;
+            
+            distances = {};
+            previous = {};
+            visited = new Set();
+            shortestPath = [];
+            currentNode = null;
+            
+            nodes.forEach(node => {
+                distances[node.id] = Infinity;
+                previous[node.id] = null;
+            });
+            
+            distances[startNodeId] = 0;
+            
+            drawGraph();
+            updateDistanceTable();
+            updateStats();
+            updateStatus('路径已清除 / Path cleared / 経路がクリアされました');
+            resetModeButtons();
+        }
+
+        // 更新距离表
+        function updateDistanceTable() {
+            const table = document.getElementById('distanceTable');
+            if (!table) return;
+            
+            table.innerHTML = '';
+            
+            nodes.forEach(node => {
+                const row = document.createElement('tr');
+                
+                let rowClass = '';
+                if (node.id === currentNode) {
+                    rowClass = 'current-node';
+                } else if (visited.has(node.id)) {
+                    rowClass = 'visited-node';
+                } else if (shortestPath.includes(node.id)) {
+                    rowClass = 'path-node';
+                }
+                
+                row.className = rowClass;
+                
+                const dist = distances[node.id];
+                const distText = dist === Infinity ? '∞' : dist.toString();
+                const prev = previous[node.id] || '-';
+                
+                row.innerHTML = `
+                    <td><strong>${node.id}</strong></td>
+                    <td>${distText}</td>
+                    <td>${prev}</td>
+                `;
+                
+                table.appendChild(row);
+            });
+        }
+
+        // 更新统计
+        function updateStats() {
+            document.getElementById('visitedCount').textContent = `${visited.size} / ${NUM_NODES}`;
+            document.getElementById('pathLength').textContent = '0';
+            document.getElementById('currentNode').textContent = '-';
+        }
+
+        // 更新状态
+        function updateStatus(message) {
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+        }
+
+        // 更新速度
+        function updateSpeed() {
+            searchDelay = parseInt(document.getElementById('speedSelect').value);
+        }
+
+        // 设置模式
+        function setMode(mode) {
+            if (isSearching) return;
+            
+            resetModeButtons();
+            currentMode = mode;
+            
+            if (mode === 'start') {
+                document.getElementById('setStartBtn').style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                canvas.style.cursor = 'pointer';
+                updateStatus('点击节点设置起点 / Click a node to set start / 始点を設定するノードをクリック');
+            } else if (mode === 'end') {
+                document.getElementById('setEndBtn').style.background = 'linear-gradient(135deg, #F44336 0%, #d32f2f 100%)';
+                canvas.style.cursor = 'pointer';
+                updateStatus('点击节点设置终点 / Click a node to set end / 終点を設定するノードをクリック');
+            }
+        }
+
+        // 重置模式按钮
+        function resetModeButtons() {
+            currentMode = 'none';
+            document.getElementById('setStartBtn').style.background = '';
+            document.getElementById('setEndBtn').style.background = '';
+            canvas.style.cursor = 'default';
+        }
+
+        // 获取点击的节点
+        function getNodeAtPosition(x, y) {
+            for (let node of nodes) {
+                const dx = x - node.x;
+                const dy = y - node.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance <= 30) {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        // 延迟函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
