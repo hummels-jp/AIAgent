@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A* 算法详解</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #333;
+            font-size: 24px;
+            margin: 20px 0 15px;
+        }
+
+        .section p {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        /* 动态演示区域 */
+        .demo-container {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .demo-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-end {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-wall {
+            background: #343a40;
+            color: white;
+        }
+
+        .btn-run {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-clear-path {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-speed {
+            background: #6c757d;
+            color: white;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speed-control select {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .grid-container {
+            display: inline-block;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid {
+            display: grid;
+            gap: 2px;
+            background: #e9ecef;
+            border: 3px solid #dee2e6;
+            border-radius: 5px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .cell:hover {
+            background: #e0e0e0;
+        }
+
+        .cell.start {
+            background: #28a745 !important;
+            color: white;
+        }
+
+        .cell.end {
+            background: #dc3545 !important;
+            color: white;
+        }
+
+        .cell.wall {
+            background: #343a40 !important;
+            color: white;
+        }
+
+        .cell.visited {
+            background: #ffc107 !important;
+            animation: visitedAnimation 0.5s ease-in;
+        }
+
+        .cell.open {
+            background: #87ceeb !important;
+        }
+
+        .cell.path {
+            background: #667eea !important;
+            color: white;
+            animation: pathAnimation 0.3s ease-in;
+        }
+
+        @keyframes visitedAnimation {
+            0% {
+                transform: scale(0.3);
+                background: rgba(255, 193, 7, 0.7);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                background: #ffc107;
+            }
+        }
+
+        @keyframes pathAnimation {
+            0% {
+                transform: scale(0.6);
+                background: rgba(102, 126, 234, 0.7);
+            }
+            100% {
+                transform: scale(1);
+                background: #667eea;
+            }
+        }
+
+        .legend {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #dee2e6;
+        }
+
+        .info-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-panel h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .info-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status-message.active {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .formula {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .formula .math {
+            display: inline-block;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .algorithm-steps {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .algorithm-steps ol {
+            padding-left: 30px;
+        }
+
+        .algorithm-steps li {
+            margin: 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 25px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .code-block .keyword {
+            color: #ff79c6;
+        }
+
+        .code-block .function {
+            color: #50fa7b;
+        }
+
+        .code-block .string {
+            color: #f1fa8c;
+        }
+
+        .code-block .comment {
+            color: #6272a4;
+        }
+
+        .code-block .number {
+            color: #bd93f9;
+        }
+
+        .advantages-disadvantages {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .box {
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .advantages {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+        }
+
+        .disadvantages {
+            background: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+
+        .box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .box ul {
+            padding-left: 20px;
+        }
+
+        .box li {
+            margin: 10px 0;
+            color: #555;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .navigation {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .navigation a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .navigation a:hover {
+            color: #764ba2;
+        }
+
+        @media (max-width: 768px) {
+            .advantages-disadvantages {
+                grid-template-columns: 1fr;
+            }
+            
+            .cell {
+                width: 25px;
+                height: 25px;
+                font-size: 8px;
+            }
+            
+            .demo-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 A* 算法详解</h1>
+            <p>A-Star Search Algorithm - 一种高效的路径搜索算法</p>
+        </div>
+
+        <div class="content">
+            <!-- 动态演示区域 -->
+            <div class="section" id="demo">
+                <h2>🎮 动态演示</h2>
+                <p>点击网格设置起点（绿色）和终点（红色），然后点击"开始搜索"观看 A* 算法的搜索过程！</p>
+                
+                <div class="demo-container">
+                    <div class="demo-controls">
+                        <button class="demo-btn btn-start" onclick="setMode('start')">🟢 设置起点</button>
+                        <button class="demo-btn btn-end" onclick="setMode('end')">🔴 设置终点</button>
+                        <button class="demo-btn btn-wall" onclick="setMode('wall')">⬛ 添加障碍</button>
+                        <button class="demo-btn btn-clear-path" onclick="clearPath()">🗑️ 清除路径</button>
+                        <button class="demo-btn btn-reset" onclick="resetGrid()">🔄 重置网格</button>
+                        <button class="demo-btn btn-run" onclick="runAStar()">▶️ 开始搜索</button>
+                        
+                        <div class="speed-control">
+                            <label for="speed">速度:</label>
+                            <select id="speed">
+                                <option value="500">慢速</option>
+                                <option value="100" selected>正常</option>
+                                <option value="20">快速</option>
+                                <option value="5">极速</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="statusMessage" class="status-message info active">
+                        请先设置起点和终点，然后点击"开始搜索"
+                    </div>
+
+                    <div class="grid-container">
+                        <div id="grid" class="grid"></div>
+                    </div>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #28a745;"></div>
+                            起点
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #dc3545;"></div>
+                            终点
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #343a40;"></div>
+                            障碍物
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #87ceeb;"></div>
+                            待探索
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #ffc107;"></div>
+                            已探索
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #667eea;"></div>
+                            最优路径
+                        </div>
+                    </div>
+
+                    <div class="info-panel">
+                        <h4>📊 搜索统计</h4>
+                        <div class="info-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">已探索节点</div>
+                                <div class="stat-value" id="visitedCount">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">路径长度</div>
+                                <div class="stat-value" id="pathLength">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">搜索时间</div>
+                                <div class="stat-value" id="searchTime">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导航 -->
+            <div class="navigation">
+                <a href="#introduction">简介</a>
+                <a href="#principle">原理</a>
+                <a href="#formula">公式</a>
+                <a href="#steps">步骤</a>
+                <a href="#code">代码</a>
+                <a href="#pros-cons">优缺点</a>
+            </div>
+
+            <!-- 简介 -->
+            <div class="section" id="introduction">
+                <h2>📚 算法简介</h2>
+                <p>A* (A-Star) 算法是一种启发式搜索算法，广泛应用于游戏开发、机器人路径规划、地图导航等领域。它结合了 Dijkstra 算法的正确性和贪心算法的效率，能够找到从起点到终点的最优路径。</p>
+                <p>A* 算法的核心思想是：<strong>通过评估函数 f(n) = g(n) + h(n) 来指导搜索方向，优先探索最有希望的节点。</strong></p>
+            </div>
+
+            <!-- 原理 -->
+            <div class="section" id="principle">
+                <h2>🎯 算法原理</h2>
+                <p>A* 算法使用了三种重要的评估值：</p>
+                <ul>
+                    <li><strong>g(n)</strong> - 从起点到当前节点 n 的实际代价（已花费代价）</li>
+                    <li><strong>h(n)</strong> - 从节点 n 到终点的估计代价（启发式函数）</li>
+                    <li><strong>f(n)</strong> - 总评估值，f(n) = g(n) + h(n)</li>
+                </ul>
+                
+                <div class="note">
+                    💡 <strong>启发式函数 h(n)</strong> 的选择对算法效率至关重要。常用的启发式函数包括曼哈顿距离、欧几里得距离等。h(n) 必须是<strong>可采纳的</strong>（即不超过实际最小代价），才能保证找到最优路径。
+                </div>
+            </div>
+
+            <!-- 公式 -->
+            <div class="section" id="formula">
+                <h2>📐 核心公式</h2>
+                <div class="formula">
+                    <span class="math">f(n) = g(n) + h(n)</span>
+                </div>
+                <p>其中：</p>
+                <ul>
+                    <li><strong>f(n)</strong> - 节点 n 的总评估值</li>
+                    <li><strong>g(n)</strong> - 从起点到节点 n 的实际距离</li>
+                    <li><strong>h(n)</strong> - 从节点 n 到终点的估计距离（启发式）</li>
+                </ul>
+
+                <h3>常用的启发式函数：</h3>
+                <div class="formula">
+                    <span class="math">曼哈顿距离：h(n) = |x₁ - x₂| + |y₁ - y₂|</span>
+                </div>
+                <div class="formula">
+                    <span class="math">欧几里得距离：h(n) = √[(x₁ - x₂)² + (y₁ - y₂)²]</span>
+                </div>
+            </div>
+
+            <!-- 步骤 -->
+            <div class="section" id="steps">
+                <h2>📝 算法步骤</h2>
+                <div class="algorithm-steps">
+                    <ol>
+                        <li><strong>初始化</strong>：将起点加入开放列表（Open List），设置 g(start) = 0</li>
+                        <li><strong>循环</strong>：当开放列表不为空时，重复以下步骤：
+                            <ul>
+                                <li>从开放列表中选择 f 值最小的节点作为当前节点</li>
+                                <li>如果当前节点是终点，回溯路径并返回结果</li>
+                                <li>将当前节点从开放列表移至关闭列表（Closed List）</li>
+                                <li>对当前节点的所有邻居节点进行处理：
+                                    <ul>
+                                        <li>如果邻居在关闭列表中，跳过</li>
+                                        <li>计算新的 g 值和 f 值</li>
+                                        <li>如果邻居不在开放列表，加入开放列表</li>
+                                        <li>如果邻居已在开放列表，且新路径更优，更新其值</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><strong>结束</strong>：如果开放列表为空，说明无解；否则返回找到的路径</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- 代码 -->
+            <div class="section" id="code">
+                <h2>💻 算法代码实现</h2>
+                <div class="code-block">
+<pre>
+<span class="keyword">import</span> heapq
+<span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict
+
+<span class="function">def</span> <span class="function">a_star</span>(grid, start, end):
+    <span class="comment"># 初始化</span>
+    rows, cols = len(grid), len(grid[<span class="number">0</span>])
+    open_set = []
+    heapq.heappush(open_set, (<span class="number">0</span>, start))
+    
+    came_from = {}
+    g_score = defaultdict(<span class="keyword">lambda</span>: <span class="function">float</span>(<span class="string">'inf'</span>))
+    g_score[start] = <span class="number">0</span>
+    
+    f_score = defaultdict(<span class="keyword">lambda</span>: <span class="function">float</span>(<span class="string">'inf'</span>))
+    f_score[start] = heuristic(start, end)
+    
+    closed_set = set()
+    
+    <span class="keyword">while</span> open_set:
+        current_f, current = heapq.heappop(open_set)
+        
+        <span class="keyword">if</span> current == end:
+            <span class="keyword">return</span> reconstruct_path(came_from, current)
+        
+        closed_set.add(current)
+        
+        <span class="comment"># 遍历四个方向</span>
+        <span class="keyword">for</span> dx, dy <span class="keyword">in</span> [(-<span class="number">1</span>, <span class="number">0</span>), (<span class="number">1</span>, <span class="number">0</span>), (<span class="number">0</span>, -<span class="number">1</span>), (<span class="number">0</span>, <span class="number">1</span>)]:
+            nx, ny = current[<span class="number">0</span>] + dx, current[<span class="number">1</span>] + dy
+            
+            <span class="comment"># 检查边界和障碍</span>
+            <span class="keyword">if</span> <span class="number">0</span> <= nx < rows <span class="keyword">and</span> <span class="number">0</span> <= ny < cols:
+                <span class="keyword">if</span> grid[nx][ny] == <span class="number">1</span> <span class="keyword">or</span> (nx, ny) <span class="keyword">in</span> closed_set:
+                    <span class="keyword">continue</span>
+                
+                neighbor = (nx, ny)
+                tentative_g = g_score[current] + <span class="number">1</span>
+                
+                <span class="keyword">if</span> tentative_g < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g
+                    f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, end)
+                    
+                    <span class="keyword">if</span> neighbor <span class="keyword">not</span> [node <span class="keyword">for</span> _, node <span class="keyword">in</span> open_set]:
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
+    
+    <span class="keyword">return</span> <span class="keyword">None</span>
+
+<span class="function">def</span> <span class="function">heuristic</span>(a, b):
+    <span class="comment"># 曼哈顿距离</span>
+    <span class="keyword">return</span> <span class="function">abs</span>(a[<span class="number">0</span>] - b[<span class="number">0</span>]) + <span class="function">abs</span>(a[<span class="number">1</span>] - b[<span class="number">1</span>])
+
+<span class="function">def</span> <span class="function">reconstruct_path</span>(came_from, current):
+    path = [current]
+    <span class="keyword">while</span> current <span class="keyword">in</span> came_from:
+        current = came_from[current]
+        path.append(current)
+    path.reverse()
+    <span class="keyword">return</span> path
+</pre>
+                </div>
+            </div>
+
+            <!-- 优缺点 -->
+            <div class="section" id="pros-cons">
+                <h2>⚖️ 优缺点分析</h2>
+                <div class="advantages-disadvantages">
+                    <div class="box advantages">
+                        <h3>✅ 优点</h3>
+                        <ul>
+                            <li>能够找到最优路径（在可采纳启发式函数下）</li>
+                            <li>搜索效率高，比纯暴力搜索快很多</li>
+                            <li>适用性广，可用于各种路径规划问题</li>
+                            <li>启发式函数可以灵活调整，平衡速度和准确性</li>
+                            <li>在游戏开发中表现优异</li>
+                        </ul>
+                    </div>
+                    <div class="box disadvantages">
+                        <h3>❌ 缺点</h3>
+                        <ul>
+                            <li>需要设计合适的启发式函数</li>
+                            <li>在极端情况下可能退化为 Dijkstra 算法</li>
+                            <li>对于大规模地图，内存消耗较大</li>
+                            <li>启发式函数选择不当可能导致效率低下</li>
+                            <li>在动态环境中需要重新计算路径</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 应用场景 -->
+            <div class="section">
+                <h2>🌍 应用场景</h2>
+                <ul>
+                    <li><strong>游戏开发</strong>：NPC 寻路、角色移动</li>
+                    <li><strong>机器人导航</strong>：自动避障、路径规划</li>
+                    <li><strong>地图导航</strong>：GPS 路径规划、交通导航</li>
+                    <li><strong>网络路由</strong>：数据包路由选择</li>
+                    <li><strong>拼图游戏</strong>：八数码、十五数码等</li>
+                    <li><strong>物流配送</strong>：最优配送路径规划</li>
+                </ul>
+            </div>
+
+            <!-- 总结 -->
+            <div class="section">
+                <h2>📌 总结</h2>
+                <p>A* 算法是一种强大而优雅的路径搜索算法，它通过巧妙结合实际代价和启发式估计，在保证找到最优路径的同时，显著提高了搜索效率。理解 A* 算法的核心思想——f(n) = g(n) + h(n)——对于解决各种路径规划问题至关重要。</p>
+                <p>在实际应用中，关键在于选择合适的启发式函数，这直接影响到算法的性能和效率。通过合理的设计和优化，A* 算法可以在各种场景下发挥出色的作用。</p>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <p>🎯 A* 算法 - 启发式搜索的经典之作</p>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const ROWS = 15;
+        const COLS = 20;
+        let grid = [];
+        let startNode = null;
+        let endNode = null;
+        let currentMode = 'wall';
+        let isMouseDown = false;
+        let isRunning = false;
+
+        // 初始化网格
+        function initGrid() {
+            const gridElement = document.getElementById('grid');
+            gridElement.innerHTML = '';
+            gridElement.style.gridTemplateColumns = `repeat(${COLS}, 30px)`;
+            grid = [];
+
+            for (let i = 0; i < ROWS; i++) {
+                grid[i] = [];
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    cell.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        isMouseDown = true;
+                        handleCellClick(i, j);
+                    });
+                    
+                    cell.addEventListener('mouseenter', () => {
+                        if (isMouseDown && currentMode === 'wall') {
+                            toggleWall(i, j);
+                        }
+                    });
+                    
+                    cell.addEventListener('mouseup', () => {
+                        isMouseDown = false;
+                    });
+                    
+                    gridElement.appendChild(cell);
+                    grid[i][j] = {
+                        element: cell,
+                        isWall: false,
+                        isStart: false,
+                        isEnd: false,
+                        g: Infinity,
+                        h: Infinity,
+                        f: Infinity
+                    };
+                }
+            }
+        }
+
+        // 设置模式
+        function setMode(mode) {
+            currentMode = mode;
+            updateStatusMessage('info', `已选择：${getModeName(mode)}模式`);
+        }
+
+        // 获取模式名称
+        function getModeName(mode) {
+            const names = {
+                'start': '设置起点',
+                'end': '设置终点',
+                'wall': '添加障碍'
+            };
+            return names[mode] || mode;
+        }
+
+        // 处理单元格点击
+        function handleCellClick(row, col) {
+            if (isRunning) return;
+
+            const cell = grid[row][col];
+
+            if (currentMode === 'start') {
+                if (cell.isEnd) return;
+                if (cell.isStart) return;
+                
+                // 清除之前的起点
+                if (startNode) {
+                    grid[startNode[0]][startNode[1]].isStart = false;
+                    grid[startNode[0]][startNode[1]].element.classList.remove('start');
+                }
+                
+                cell.isStart = true;
+                cell.element.classList.add('start');
+                cell.element.classList.remove('wall');
+                cell.isWall = false;
+                startNode = [row, col];
+                
+                updateStatusMessage('info', '起点已设置，请设置终点或添加障碍');
+            }
+            else if (currentMode === 'end') {
+                if (cell.isStart) return;
+                if (cell.isEnd) return;
+                
+                // 清除之前的终点
+                if (endNode) {
+                    grid[endNode[0]][endNode[1]].isEnd = false;
+                    grid[endNode[0]][endNode[1]].element.classList.remove('end');
+                }
+                
+                cell.isEnd = true;
+                cell.element.classList.add('end');
+                cell.element.classList.remove('wall');
+                cell.isWall = false;
+                endNode = [row, col];
+                
+                updateStatusMessage('info', '终点已设置，可以开始搜索了！');
+            }
+            else if (currentMode === 'wall') {
+                toggleWall(row, col);
+            }
+        }
+
+        // 切换障碍物
+        function toggleWall(row, col) {
+            if (isRunning) return;
+            
+            const cell = grid[row][col];
+            
+            if (cell.isStart || cell.isEnd) return;
+            
+            cell.isWall = !cell.isWall;
+            cell.element.classList.toggle('wall');
+        }
+
+        // 清除路径
+        function clearPath() {
+            if (isRunning) return;
+            
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const cell = grid[i][j];
+                    cell.g = Infinity;
+                    cell.h = Infinity;
+                    cell.f = Infinity;
+                    cell.element.classList.remove('visited', 'open', 'path');
+                }
+            }
+            
+            updateStats(0, 0, 0);
+            updateStatusMessage('info', '路径已清除');
+        }
+
+        // 重置网格
+        function resetGrid() {
+            if (isRunning) return;
+            
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    grid[i][j].isWall = false;
+                    grid[i][j].isStart = false;
+                    grid[i][j].isEnd = false;
+                    grid[i][j].g = Infinity;
+                    grid[i][j].h = Infinity;
+                    grid[i][j].f = Infinity;
+                    grid[i][j].element.className = 'cell';
+                }
+            }
+            
+            startNode = null;
+            endNode = null;
+            
+            updateStats(0, 0, 0);
+            updateStatusMessage('info', '网格已重置，请设置起点和终点');
+        }
+
+        // 曼哈顿距离
+        function heuristic(a, b) {
+            return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+        }
+
+        // 运行A*算法
+        async function runAStar() {
+            if (!startNode || !endNode) {
+                updateStatusMessage('error', '请先设置起点和终点！');
+                return;
+            }
+
+            if (isRunning) return;
+            isRunning = true;
+
+            clearPath();
+            updateStatusMessage('info', '正在搜索路径...');
+
+            const speed = parseInt(document.getElementById('speed').value);
+            const openSet = [];
+            const closedSet = new Set();
+            let visitedCount = 0;
+            const startTime = Date.now();
+
+            // 初始化起点
+            grid[startNode[0]][startNode[1]].g = 0;
+            grid[startNode[0]][startNode[1]].h = heuristic(startNode, endNode);
+            grid[startNode[0]][startNode[1]].f = grid[startNode[0]][startNode[1]].g + grid[startNode[0]][startNode[1]].h;
+            
+            openSet.push({
+                f: grid[startNode[0]][startNode[1]].f,
+                pos: startNode
+            });
+
+            while (openSet.length > 0) {
+                // 找到f值最小的节点
+                openSet.sort((a, b) => a.f - b.f);
+                const current = openSet.shift().pos;
+                const currentCell = grid[current[0]][current[1]];
+
+                // 如果到达终点
+                if (current[0] === endNode[0] && current[1] === endNode[1]) {
+                    const searchTime = Date.now() - startTime;
+                    const path = reconstructPath(currentCell);
+                    updateStatusMessage('success', `找到路径！路径长度: ${path.length}, 搜索时间: ${searchTime}ms`);
+                    updateStats(visitedCount, path.length, searchTime);
+                    isRunning = false;
+                    return;
+                }
+
+                closedSet.add(`${current[0]},${current[1]}`);
+
+                // 标记为已访问
+                if (!currentCell.isStart && !currentCell.isEnd) {
+                    currentCell.element.classList.remove('open');
+                    currentCell.element.classList.add('visited');
+                    visitedCount++;
+                }
+
+                // 探索邻居
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                for (const [dx, dy] of directions) {
+                    const nx = current[0] + dx;
+                    const ny = current[1] + dy;
+
+                    if (nx < 0 || nx >= ROWS || ny < 0 || ny >= COLS) continue;
+                    
+                    const neighborCell = grid[nx][ny];
+                    if (neighborCell.isWall || closedSet.has(`${nx},${ny}`)) continue;
+
+                    const tentativeG = currentCell.g + 1;
+
+                    if (tentativeG < neighborCell.g) {
+                        neighborCell.parent = currentCell;
+                        neighborCell.g = tentativeG;
+                        neighborCell.h = heuristic([nx, ny], endNode);
+                        neighborCell.f = neighborCell.g + neighborCell.h;
+
+                        const inOpenSet = openSet.find(node => node.pos[0] === nx && node.pos[1] === ny);
+                        if (!inOpenSet) {
+                            openSet.push({ f: neighborCell.f, pos: [nx, ny] });
+                            if (!neighborCell.isEnd) {
+                                neighborCell.element.classList.add('open');
+                            }
+                        }
+                    }
+                }
+
+                // 延迟以展示动画
+                if (speed > 0) {
+                    await new Promise(resolve => setTimeout(resolve, speed));
+                }
+            }
+
+            // 无法到达终点
+            const searchTime = Date.now() - startTime;
+            updateStatusMessage('error', '无法到达终点！');
+            updateStats(visitedCount, 0, searchTime);
+            isRunning = false;
+        }
+
+        // 重建路径
+        function reconstructPath(endCell) {
+            const path = [];
+            let current = endCell;
+
+            while (current) {
+                path.push(current);
+                if (!current.isStart && !current.isEnd) {
+                    current.element.classList.remove('visited', 'open');
+                    current.element.classList.add('path');
+                }
+                current = current.parent;
+            }
+
+            path.reverse();
+            return path;
+        }
+
+        // 更新统计信息
+        function updateStats(visited, pathLength, time) {
+            document.getElementById('visitedCount').textContent = visited;
+            document.getElementById('pathLength').textContent = pathLength;
+            document.getElementById('searchTime').textContent = time;
+        }
+
+        // 更新状态消息
+        function updateStatusMessage(type, message) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.className = 'status-message active ' + type;
+            statusElement.textContent = message;
+        }
+
+        // 全局鼠标释放事件
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // 初始化
+        initGrid();
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
