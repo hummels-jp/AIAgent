@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拓扑连通图构建方法 - 可视图与Voronoi图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .description {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .formula {
+            background: #fff;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .canvas-wrapper h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        canvas {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #667eea;
+        }
+
+        .info-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .step {
+            background: #fff;
+            padding: 15px;
+            border-left: 4px solid #f39c12;
+            margin: 10px 0;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>拓扑连通图构建方法</h1>
+            <p>可视图与Voronoi图详解</p>
+        </div>
+
+        <div class="content">
+            <!-- 拓扑连通图概述 -->
+            <div class="section">
+                <h2 class="section-title">拓扑连通图概述</h2>
+                <div class="description">
+                    <p><strong>拓扑连通图</strong>是机器人路径规划中用于表示环境中自由空间连接关系的数据结构。它将连续的工作空间离散化为图结构，其中节点表示可达位置，边表示可达路径。</p>
+                    
+                    <div class="info-box">
+                        <h4>主要特点：</h4>
+                        <ul>
+                            <li><strong>拓扑结构</strong>：只关心位置之间的连接关系，不关心具体几何形状</li>
+                            <li><strong>连通性</strong>：确保图中任意两个可达节点之间存在路径</li>
+                            <li><strong>完整性</strong>：能够表示环境中的所有可行路径</li>
+                            <li><strong>简洁性</strong>：相比网格表示，大大减少状态空间</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>应用场景：</h4>
+                        <ul>
+                            <li>室内环境导航（家庭、办公室、仓库）</li>
+                            <li>室外路径规划（城市道路、野外环境）</li>
+                            <li>多机器人协同路径规划</li>
+                            <li>动态环境中的实时路径更新</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 可视图部分 -->
+            <div class="section">
+                <h2 class="section-title">可视图</h2>
+                <div class="description">
+                    <p><strong>可视图</strong>是一种基于可见性约束的拓扑图构建方法。它将障碍物的顶点作为图的节点，并在所有相互可见的顶点之间建立边连接。</p>
+                    
+                    <div class="info-box">
+                        <h4>核心思想：</h4>
+                        <p>如果两点之间的连线不与任何障碍物相交，则这两点在可视图中是"可见"的，可以建立连接。这样构建的图中的最短路径就是实际环境中的最短路径。</p>
+                    </div>
+
+                    <div class="formula">
+                        <strong>可见性判断条件：</strong><br>
+                        点P1(x1, y1)和点P2(x2, y2)可见，当且仅当：<br>
+                        ∀ 障碍物边E: segment(P1, P2) ∩ E = ∅
+                    </div>
+
+                    <h3 style="color: #667eea; margin: 20px 0 15px;">构建算法步骤：</h3>
+                    <div class="step">
+                        <strong>步骤1：提取障碍物顶点</strong><br>
+                        收集所有障碍物的所有顶点，作为图的候选节点
+                    </div>
+                    <div class="step">
+                        <strong>步骤2：添加起点和终点</strong><br>
+                        将起点和终点作为额外的节点加入图中
+                    </div>
+                    <div class="step">
+                        <strong>步骤3：判断可见性</strong><br>
+                        对每对顶点，判断它们之间的线段是否与任何障碍物相交
+                    </div>
+                    <div class="step">
+                        <strong>步骤4：建立边连接</strong><br>
+                        如果两点相互可见，则在它们之间建立边，边的权重为欧几里得距离
+                    </div>
+                    <div class="step">
+                        <strong>步骤5：路径搜索</strong><br>
+                        使用A*等图搜索算法在构建的可视图中寻找从起点到终点的最短路径
+                    </div>
+
+                    <div class="info-box">
+                        <h4>优点：</h4>
+                        <ul>
+                            <li>✓ 能够找到理论上的最短路径</li>
+                            <li>✓ 图的规模相对较小，计算效率高</li>
+                            <li>✓ 适用于多边形障碍物环境</li>
+                        </ul>
+                        <h4 style="margin-top: 10px;">缺点：</h4>
+                        <ul>
+                            <li>✗ 路径可能过于贴近障碍物，不安全</li>
+                            <li>✗ 需要精确的障碍物几何信息</li>
+                            <li>✗ 不考虑运动学约束</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="canvas-wrapper" style="width: 100%;">
+                        <h3>可视图动态演示</h3>
+                        <canvas id="visibilityCanvas" width="900" height="500"></canvas>
+                        <div class="controls">
+                            <button onclick="generateVisibilityGraph()">生成可视图</button>
+                            <button onclick="findPathVisibility()">查找路径</button>
+                            <button onclick="resetVisibility()">重置</button>
+                            <button onclick="addRandomObstacle()">添加障碍物</button>
+                        </div>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span>起点</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span>终点</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span>障碍物</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span>可见边</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span>最短路径</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voronoi图部分 -->
+            <div class="section">
+                <h2 class="section-title">Voronoi图</h2>
+                <div class="description">
+                    <p><strong>Voronoi图</strong>是一种基于距离的划分方法，将平面划分为若干区域，每个区域包含所有距离某个种子点最近的点。在路径规划中，Voronoi图的边线是距离障碍物最远的安全路径。</p>
+                    
+                    <div class="info-box">
+                        <h4>核心思想：</h4>
+                        <p>Voronoi图由所有到两个或多个障碍物等距的点组成。这些点形成了一条"脊线"，在机器人导航中代表最安全的路径，因为它们距离所有障碍物的距离都相等且最大。</p>
+                    </div>
+
+                    <div class="formula">
+                        <strong>Voronoi定义：</strong><br>
+                        对于障碍物集合O，点P属于障碍物O_i的Voronoi区域，当且仅当：<br>
+                        distance(P, O_i) ≤ distance(P, O_j) for all j ≠ i
+                    </div>
+
+                    <div class="formula">
+                        <strong>Voronoi边（脊线）：</strong><br>
+                        点P位于Voronoi边上，当且仅当：<br>
+                        ∃ i, j: distance(P, O_i) = distance(P, O_j) < distance(P, O_k) for all k ≠ i,j
+                    </div>
+
+                    <h3 style="color: #667eea; margin: 20px 0 15px;">构建方法：</h3>
+                    
+                    <div class="step">
+                        <strong>方法1：离散点法</strong><br>
+                        1. 在环境中均匀采样大量离散点<br>
+                        2. 对每个点，计算到所有障碍物的距离<br>
+                        3. 找到最近和次近的障碍物<br>
+                        4. 如果距离相等（在误差范围内），则该点在Voronoi边上
+                    </div>
+
+                    <div class="step">
+                        <strong>方法2：增量法（适用于少量种子点）</strong><br>
+                        1. 从两个种子点开始，构建它们的垂直平分线<br>
+                        2. 逐个添加新种子点，更新Voronoi图<br>
+                        3. 处理新增顶点和边的关系<br>
+                        4. 删除被覆盖的区域
+                    </div>
+
+                    <div class="step">
+                        <strong>方法3：波前扩散法（适用于复杂环境）</strong><br>
+                        1. 从所有障碍物边界同时开始扩散<br>
+                        2. 两个波前相遇的位置就是Voronoi边<br>
+                        3. 三个或多个波前相遇的位置是Voronoi顶点<br>
+                        4. 类似于计算距离变换和提取骨架
+                    </div>
+
+                    <div class="info-box">
+                        <h4>优点：</h4>
+                        <ul>
+                            <li>✓ 路径距离障碍物最远，安全性高</li>
+                            <li>✓ 对障碍物形状不敏感，适用性广</li>
+                            <li>✓ 天然提供了多条备选路径</li>
+                            <li>✓ 适用于凸形和凹形障碍物</li>
+                        </ul>
+                        <h4 style="margin-top: 10px;">缺点：</h4>
+                        <ul>
+                            <li>✗ 路径通常不是最短路径</li>
+                            <li>✗ 构建计算复杂度较高</li>
+                            <li>✗ 在狭窄通道中可能不稳定</li>
+                            <li>✗ 生成的路径可能过于曲折</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="canvas-wrapper" style="width: 100%;">
+                        <h3>Voronoi图动态演示</h3>
+                        <canvas id="voronoiCanvas" width="900" height="500"></canvas>
+                        <div class="controls">
+                            <button onclick="generateVoronoi()">生成Voronoi图</button>
+                            <button onclick="findPathVoronoi()">查找路径</button>
+                            <button onclick="resetVoronoi()">重置</button>
+                            <button onclick="addRandomObstacleVoronoi()">添加障碍物</button>
+                        </div>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span>起点</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span>终点</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span>障碍物</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span>Voronoi边</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span>路径</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对比总结 -->
+            <div class="section">
+                <h2 class="section-title">可视图 vs Voronoi图 对比</h2>
+                <div class="info-box">
+                    <table>
+                        <tr>
+                            <th>特性</th>
+                            <th>可视图</th>
+                            <th>Voronoi图</th>
+                        </tr>
+                        <tr>
+                            <td>路径类型</td>
+                            <td>最短路径</td>
+                            <td>安全路径（最大间隙）</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td>与障碍物距离</td>
+                            <td>可能非常近</td>
+                            <td>保持最大距离</td>
+                        </tr>
+                        <tr>
+                            <td>计算复杂度</td>
+                            <td>O(n²)</td>
+                            <td>O(n log n) ~ O(n²)</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td>障碍物约束</td>
+                            <td>精确几何信息</td>
+                            <td>只需要距离信息</td>
+                        </tr>
+                        <tr>
+                            <td>适用环境</td>
+                            <td>多边形障碍物</td>
+                            <td>任意形状障碍物</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td>路径质量</td>
+                            <td>最优（距离）</td>
+                            <td>次优（安全性高）</td>
+                        </tr>
+                        <tr>
+                            <td>实现难度</td>
+                            <td>中等</td>
+                            <td>较高</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td>备选路径</td>
+                            <td>较少</td>
+                            <td>较多</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="info-box">
+                    <h4>选择建议：</h4>
+                    <ul>
+                        <li><strong>使用可视图</strong>：当需要最短路径、障碍物是精确多边形、计算资源充足时</li>
+                        <li><strong>使用Voronoi图</strong>：当需要安全路径、障碍物形状复杂、环境不确定时</li>
+                        <li><strong>混合方法</strong>：先用Voronoi图规划安全走廊，再在走廊内用可视图优化路径</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 扩展应用 -->
+            <div class="section">
+                <h2 class="section-title">扩展应用</h2>
+                <div class="description">
+                    <p>除了可视图和Voronoi图，还有其他拓扑图构建方法，每种都有其适用场景。</p>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="canvas-wrapper">
+                        <h3>栅格图</h3>
+                        <canvas id="gridCanvas" width="350" height="300"></canvas>
+                        <p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
+                            简单但计算量大
+                        </p>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <h3>PRM路标图</h3>
+                        <canvas id="prmCanvas" width="350" height="300"></canvas>
+                        <p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
+                            适用于高维空间
+                        </p>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <h3>RRT快速探索树</h3>
+                        <canvas id="rrtCanvas" width="350" height="300"></canvas>
+                        <p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
+                            适用于复杂动态环境
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-box" style="margin-top: 30px;">
+                    <h4>其他方法简介：</h4>
+                    <ul>
+                        <li><strong>栅格图</strong>：将环境划分为均匀网格，适合简单环境，但状态空间大</li>
+                        <li><strong>PRM</strong>：概率路标图，随机采样构建图，适用于高维配置空间</li>
+                        <li><strong>RRT</strong>：快速探索随机树，通过随机采样快速构建搜索树</li>
+                        <li><strong>Theta*</strong>：基于可视图的改进，允许路径任意穿越网格</li>
+                        <li><strong>导航网格</strong>：将自由空间分割为凸多边形，用于游戏AI</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 可视图实现 ====================
+        const visCanvas = document.getElementById('visibilityCanvas');
+        const visCtx = visCanvas.getContext('2d');
+        
+        let visObstacles = [];
+        let visEdges = [];
+        let visPath = [];
+        let visStart = {x: 50, y: 250};
+        let visEnd = {x: 850, y: 250};
+        
+        // 初始化障碍物
+        function initVisibilityObstacles() {
+            visObstacles = [
+                // 障碍物1 - 三角形
+                [{x: 200, y: 150}, {x: 250, y: 250}, {x: 150, y: 250}],
+                // 障碍物2 - 矩形
+                [{x: 400, y: 150}, {x: 500, y: 150}, {x: 500, y: 350}, {x: 400, y: 350}],
+                // 障碍物3 - 五边形
+                [{x: 600, y: 200}, {x: 650, y: 150}, {x: 700, y: 200}, {x: 675, y: 280}, {x: 625, y: 280}],
+                // 障碍物4 - 梯形
+                [{x: 750, y: 100}, {x: 850, y: 100}, {x: 800, y: 200}, {x: 780, y: 200}]
+            ];
+        }
+        
+        // 绘制背景网格
+        function drawVisGrid() {
+            visCtx.fillStyle = '#fafafa';
+            visCtx.fillRect(0, 0, visCanvas.width, visCanvas.height);
+            
+            visCtx.strokeStyle = '#e0e0e0';
+            visCtx.lineWidth = 0.5;
+            
+            for (let i = 0; i <= visCanvas.width; i += 25) {
+                visCtx.beginPath();
+                visCtx.moveTo(i, 0);
+                visCtx.lineTo(i, visCanvas.height);
+                visCtx.stroke();
+            }
+            
+            for (let j = 0; j <= visCanvas.height; j += 25) {
+                visCtx.beginPath();
+                visCtx.moveTo(0, j);
+                visCtx.lineTo(visCanvas.width, j);
+                visCtx.stroke();
+            }
+        }
+        
+        // 绘制障碍物
+        function drawVisObstacles() {
+            visObstacles.forEach((obstacle, index) => {
+                visCtx.fillStyle = '#9b59b6';
+                visCtx.beginPath();
+                visCtx.moveTo(obstacle[0].x, obstacle[0].y);
+                for (let i = 1; i < obstacle.length; i++) {
+                    visCtx.lineTo(obstacle[i].x, obstacle[i].y);
+                }
+                visCtx.closePath();
+                visCtx.fill();
+                
+                visCtx.strokeStyle = '#8e44ad';
+                visCtx.lineWidth = 2;
+                visCtx.stroke();
+                
+                // 绘制顶点
+                obstacle.forEach(point => {
+                    visCtx.fillStyle = '#fff';
+                    visCtx.beginPath();
+                    visCtx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                    visCtx.fill();
+                    visCtx.strokeStyle = '#333';
+                    visCtx.lineWidth = 2;
+                    visCtx.stroke();
+                });
+            });
+        }
+        
+        // 绘制起点和终点
+        function drawVisStartEnd() {
+            // 起点
+            visCtx.fillStyle = '#2ecc71';
+            visCtx.beginPath();
+            visCtx.arc(visStart.x, visStart.y, 12, 0, Math.PI * 2);
+            visCtx.fill();
+            visCtx.fillStyle = '#fff';
+            visCtx.font = 'bold 14px Arial';
+            visCtx.textAlign = 'center';
+            visCtx.fillText('S', visStart.x, visStart.y + 5);
+            
+            // 终点
+            visCtx.fillStyle = '#e74c3c';
+            visCtx.beginPath();
+            visCtx.arc(visEnd.x, visEnd.y, 12, 0, Math.PI * 2);
+            visCtx.fill();
+            visCtx.fillStyle = '#fff';
+            visCtx.fillText('E', visEnd.x, visEnd.y + 5);
+        }
+        
+        // 绘制可见边
+        function drawVisEdges() {
+            visCtx.strokeStyle = 'rgba(52, 152, 219, 0.3)';
+            visCtx.lineWidth = 1;
+            
+            visEdges.forEach(edge => {
+                visCtx.beginPath();
+                visCtx.moveTo(edge.p1.x, edge.p1.y);
+                visCtx.lineTo(edge.p2.x, edge.p2.y);
+                visCtx.stroke();
+            });
+        }
+        
+        // 绘制路径
+        function drawVisPath() {
+            if (visPath.length < 2) return;
+            
+            visCtx.strokeStyle = '#f39c12';
+            visCtx.lineWidth = 4;
+            visCtx.setLineDash([10, 5]);
+            
+            visCtx.beginPath();
+            visCtx.moveTo(visPath[0].x, visPath[0].y);
+            
+            for (let i = 1; i < visPath.length; i++) {
+                visCtx.lineTo(visPath[i].x, visPath[i].y);
+            }
+            
+            visCtx.stroke();
+            visCtx.setLineDash([]);
+            
+            // 绘制路径点
+            visPath.forEach(point => {
+                visCtx.fillStyle = '#f39c12';
+                visCtx.beginPath();
+                visCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                visCtx.fill();
+            });
+        }
+        
+        // 判断线段是否与多边形相交
+        function lineIntersectsPolygon(p1, p2, polygon) {
+            // 检查线段与多边形每条边的相交
+            for (let i = 0; i < polygon.length; i++) {
+                const p3 = polygon[i];
+                const p4 = polygon[(i + 1) % polygon.length];
+                
+                if (lineSegmentsIntersect(p1, p2, p3, p4)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // 判断两条线段是否相交
+        function lineSegmentsIntersect(p1, p2, p3, p4) {
+            const d1 = direction(p3, p4, p1);
+            const d2 = direction(p3, p4, p2);
+            const d3 = direction(p1, p2, p3);
+            const d4 = direction(p1, p2, p4);
+            
+            if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+                ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        function direction(pi, pj, pk) {
+            return (pj.x - pi.x) * (pk.y - pi.y) - (pk.x - pi.x) * (pj.y - pi.y);
+        }
+        
+        // 获取所有顶点
+        function getAllVertices() {
+            let vertices = [visStart, visEnd];
+            visObstacles.forEach(obstacle => {
+                vertices = vertices.concat(obstacle);
+            });
+            return vertices;
+        }
+        
+        // 判断两点是否可见
+        function isVisible(p1, p2) {
+            for (const obstacle of visObstacles) {
+                // 如果两点都是同一障碍物的顶点且相邻，则可见
+                const p1Index = obstacle.indexOf(p1);
+                const p2Index = obstacle.indexOf(p2);
+                if (p1Index !== -1 && p2Index !== -1) {
+                    const adjacent = (Math.abs(p1Index - p2Index) === 1) ||
+                                   (p1Index === 0 && p2Index === obstacle.length - 1) ||
+                                   (p2Index === 0 && p1Index === obstacle.length - 1);
+                    if (adjacent) continue;
+                }
+                
+                if (lineIntersectsPolygon(p1, p2, obstacle)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // 生成可视图
+        function generateVisibilityGraph() {
+            visEdges = [];
+            const vertices = getAllVertices();
+            
+            for (let i = 0; i < vertices.length; i++) {
+                for (let j = i + 1; j < vertices.length; j++) {
+                    if (isVisible(vertices[i], vertices[j])) {
+                        const dist = Math.sqrt(
+                            Math.pow(vertices[j].x - vertices[i].x, 2) +
+                            Math.pow(vertices[j].y - vertices[i].y, 2)
+                        );
+                        visEdges.push({
+                            p1: vertices[i],
+                            p2: vertices[j],
+                            weight: dist
+                        });
+                    }
+                }
+            }
+            
+            renderVisibility();
+        }
+        
+        // A*算法查找路径
+        function findPathVisibility() {
+            console.log('开始查找路径...');
+            
+            if (visEdges.length === 0) {
+                alert('请先生成可视图！');
+                return;
+            }
+            
+            // 获取所有顶点
+            const allVertices = getAllVertices();
+            console.log(`总顶点数: ${allVertices.length}, 边数: ${visEdges.length}`);
+            
+            // 构建邻接表
+            const graph = {};
+            allVertices.forEach((v, i) => {
+                graph[i] = [];
+            });
+            
+            visEdges.forEach(edge => {
+                const idx1 = allVertices.indexOf(edge.p1);
+                const idx2 = allVertices.indexOf(edge.p2);
+                if (idx1 !== -1 && idx2 !== -1) {
+                    graph[idx1].push({node: idx2, weight: edge.weight});
+                    graph[idx2].push({node: idx1, weight: edge.weight});
+                }
+            });
+            
+            console.log(`起点的度数: ${graph[0].length}, 终点的度数: ${graph[1].length}`);
+            
+            // 检查起点和终点是否可达
+            if (graph[0].length === 0 || graph[1].length === 0) {
+                alert('起点或终点不可达！请检查可视图是否正确生成。');
+                return;
+            }
+            
+            // A*算法
+            const startIdx = 0;
+            const endIdx = 1;
+            
+            const openSet = new Set([startIdx]);
+            const openList = [{node: startIdx, f: heuristic(startIdx, allVertices, visEnd)}];
+            const cameFrom = {};
+            const gScore = {};
+            const closedSet = new Set();
+            gScore[startIdx] = 0;
+            
+            function heuristic(idx, vertices, end) {
+                const p = vertices[idx];
+                return Math.sqrt(
+                    Math.pow(end.x - p.x, 2) +
+                    Math.pow(end.y - p.y, 2)
+                );
+            }
+            
+            let iterations = 0;
+            const maxIterations = allVertices.length * 10;
+            
+            while (openList.length > 0 && iterations < maxIterations) {
+                iterations++;
+                
+                // 找f值最小的节点
+                openList.sort((a, b) => a.f - b.f);
+                const currentObj = openList.shift();
+                const current = currentObj.node;
+                
+                // 从openSet中移除
+                openSet.delete(current);
+                
+                // 检查是否到达终点
+                if (current === endIdx) {
+                    // 回溯路径
+                    visPath = [];
+                    let node = endIdx;
+                    let safetyCounter = 0;
+                    while (node !== undefined && safetyCounter < maxIterations) {
+                        visPath.unshift(allVertices[node]);
+                        node = cameFrom[node];
+                        safetyCounter++;
+                    }
+                    console.log(`找到路径！路径长度: ${visPath.length}, 迭代次数: ${iterations}`);
+                    renderVisibility();
+                    return;
+                }
+                
+                // 加入closedSet
+                closedSet.add(current);
+                
+                // 处理邻居
+                for (const neighbor of graph[current]) {
+                    const neighborNode = neighbor.node;
+                    
+                    // 跳过已处理的节点
+                    if (closedSet.has(neighborNode)) continue;
+                    
+                    const tentativeG = gScore[current] + neighbor.weight;
+                    
+                    if (tentativeG < (gScore[neighborNode] || Infinity)) {
+                        cameFrom[neighborNode] = current;
+                        gScore[neighborNode] = tentativeG;
+                        const f = tentativeG + heuristic(neighborNode, allVertices, visEnd);
+                        
+                        if (!openSet.has(neighborNode)) {
+                            openSet.add(neighborNode);
+                            openList.push({node: neighborNode, f: f});
+                        }
+                    }
+                }
+            }
+            
+            console.log(`未找到路径。迭代次数: ${iterations}, 已处理节点: ${closedSet.size}`);
+            alert('未找到路径！可能原因：\n1. 起点或终点被障碍物包围\n2. 可视图生成不完整\n3. 环境中不存在可行路径');
+        }
+        
+        function renderVisibility() {
+            drawVisGrid();
+            drawVisEdges();
+            drawVisObstacles();
+            drawVisPath();
+            drawVisStartEnd();
+        }
+        
+        function resetVisibility() {
+            visEdges = [];
+            visPath = [];
+            initVisibilityObstacles();
+            renderVisibility();
+        }
+        
+        function addRandomObstacle() {
+            const x = 200 + Math.random() * 500;
+            const y = 100 + Math.random() * 300;
+            const size = 30 + Math.random() * 40;
+            
+            visObstacles.push([
+                {x: x, y: y},
+                {x: x + size, y: y},
+                {x: x + size, y: y + size},
+                {x: x, y: y + size}
+            ]);
+            
+            visEdges = [];
+            visPath = [];
+            renderVisibility();
+        }
+        
+        // ==================== Voronoi图实现 ====================
+        const voronoiCanvas = document.getElementById('voronoiCanvas');
+        const voronoiCtx = voronoiCanvas.getContext('2d');
+        
+        let voronoiObstacles = [];
+        let voronoiSites = []; // 泰森多边形的种子点（离散点）
+        let voronoiEdges = [];
+        let voronoiPath = [];
+        let voronoiStart = {x: 50, y: 250};
+        let voronoiEnd = {x: 850, y: 250};
+        
+        function initVoronoiObstacles() {
+            // 不使用障碍物，只根据离散点生成泰森多边形
+            // 随机生成一些离散点作为泰森多边形的种子点
+            voronoiSites = [];
+
+            // 生成固定位置的离散点（便于演示）
+            const sites = [
+                {x: 150, y: 150},
+                {x: 250, y: 100},
+                {x: 200, y: 250},
+                {x: 120, y: 350},
+                {x: 300, y: 200},
+                {x: 350, y: 120},
+                {x: 400, y: 250},
+                {x: 320, y: 380},
+                {x: 480, y: 180},
+                {x: 520, y: 280},
+                {x: 450, y: 380},
+                {x: 580, y: 130},
+                {x: 650, y: 200},
+                {x: 600, y: 320},
+                {x: 720, y: 150},
+                {x: 780, y: 220},
+                {x: 700, y: 350},
+                {x: 820, y: 280}
+            ];
+
+            voronoiSites = sites;
+        }
+        
+        function drawVoronoiGrid() {
+            voronoiCtx.fillStyle = '#fafafa';
+            voronoiCtx.fillRect(0, 0, voronoiCanvas.width, voronoiCanvas.height);
+            
+            voronoiCtx.strokeStyle = '#e0e0e0';
+            voronoiCtx.lineWidth = 0.5;
+            
+            for (let i = 0; i <= voronoiCanvas.width; i += 25) {
+                voronoiCtx.beginPath();
+                voronoiCtx.moveTo(i, 0);
+                voronoiCtx.lineTo(i, voronoiCanvas.height);
+                voronoiCtx.stroke();
+            }
+            
+            for (let j = 0; j <= voronoiCanvas.height; j += 25) {
+                voronoiCtx.beginPath();
+                voronoiCtx.moveTo(0, j);
+                voronoiCtx.lineTo(voronoiCanvas.width, j);
+                voronoiCtx.stroke();
+            }
+        }
+        
+        function drawVoronoiObstacles() {
+            voronoiObstacles.forEach(obs => {
+                voronoiCtx.fillStyle = '#9b59b6';
+                voronoiCtx.beginPath();
+                voronoiCtx.moveTo(obs[0].x, obs[0].y);
+                for (let i = 1; i < obs.length; i++) {
+                    voronoiCtx.lineTo(obs[i].x, obs[i].y);
+                }
+                voronoiCtx.closePath();
+                voronoiCtx.fill();
+
+                voronoiCtx.strokeStyle = '#8e44ad';
+                voronoiCtx.lineWidth = 2;
+                voronoiCtx.stroke();
+
+                // 绘制顶点
+                voronoiCtx.fillStyle = '#fff';
+                obs.forEach(p => {
+                    voronoiCtx.beginPath();
+                    voronoiCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                    voronoiCtx.fill();
+                });
+            });
+        }
+        
+        function drawVoronoiEdges() {
+            // 为每个种子点分配颜色
+            const colors = [
+                'rgba(231, 76, 60, 0.4)',    // 红色
+                'rgba(52, 152, 219, 0.4)',   // 蓝色
+                'rgba(46, 204, 113, 0.4)',   // 绿色
+                'rgba(155, 89, 182, 0.4)',   // 紫色
+                'rgba(241, 196, 15, 0.4)',   // 黄色
+                'rgba(230, 126, 34, 0.4)',   // 橙色
+                'rgba(26, 188, 156, 0.4)',   // 青色
+                'rgba(255, 105, 180, 0.4)',  // 粉色
+                'rgba(149, 165, 166, 0.4)',  // 灰色
+                'rgba(0, 139, 139, 0.4)',    // 深青
+                'rgba(255, 140, 0, 0.4)',    // 深橙
+                'rgba(128, 0, 128, 0.4)',    // 深紫
+                'rgba(0, 128, 0, 0.4)',      // 深绿
+                'rgba(255, 0, 255, 0.4)',     // 洋红
+                'rgba(0, 255, 255, 0.4)',     // 青色
+                'rgba(255, 255, 0, 0.4)',     // 黄色
+                'rgba(128, 128, 0, 0.4)',     // 橄榄色
+                'rgba(128, 0, 0, 0.4)',      // 栗色
+            ];
+
+            // 绘制每个像素对应的种子点颜色（泰森多边形区域填充）
+            const step = 4;
+            for (let x = 0; x < voronoiCanvas.width; x += step) {
+                for (let y = 0; y < voronoiCanvas.height; y += step) {
+                    let minDist = Infinity;
+                    let nearestSiteIdx = 0;
+
+                    // 找到最近的种子点
+                    for (let i = 0; i < voronoiSites.length; i++) {
+                        const dist = Math.sqrt(
+                            (x - voronoiSites[i].x) ** 2 +
+                            (y - voronoiSites[i].y) ** 2
+                        );
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearestSiteIdx = i;
+                        }
+                    }
+
+                    // 用对应颜色填充
+                    voronoiCtx.fillStyle = colors[nearestSiteIdx % colors.length];
+                    voronoiCtx.fillRect(x, y, step, step);
+                }
+            }
+
+            // 绘制泰森多边形的边
+            voronoiCtx.strokeStyle = 'rgba(52, 152, 219, 0.8)';
+            voronoiCtx.lineWidth = 2;
+
+            voronoiEdges.forEach(edge => {
+                voronoiCtx.beginPath();
+                voronoiCtx.moveTo(edge.p1.x, edge.p1.y);
+                voronoiCtx.lineTo(edge.p2.x, edge.p2.y);
+                voronoiCtx.stroke();
+            });
+
+            // 绘制种子点（离散点）
+            voronoiSites.forEach((site, idx) => {
+                // 外圈
+                voronoiCtx.fillStyle = colors[idx % colors.length].replace('0.4', '1');
+                voronoiCtx.beginPath();
+                voronoiCtx.arc(site.x, site.y, 8, 0, Math.PI * 2);
+                voronoiCtx.fill();
+
+                // 内圈白色
+                voronoiCtx.fillStyle = '#fff';
+                voronoiCtx.beginPath();
+                voronoiCtx.arc(site.x, site.y, 5, 0, Math.PI * 2);
+                voronoiCtx.fill();
+
+                // 绘制编号
+                voronoiCtx.fillStyle = '#333';
+                voronoiCtx.font = 'bold 9px Arial';
+                voronoiCtx.textAlign = 'center';
+                voronoiCtx.textBaseline = 'middle';
+                voronoiCtx.fillText(idx + 1, site.x, site.y);
+            });
+        }
+        
+        function drawVoronoiStartEnd() {
+            // 起点
+            voronoiCtx.fillStyle = '#2ecc71';
+            voronoiCtx.beginPath();
+            voronoiCtx.arc(voronoiStart.x, voronoiStart.y, 12, 0, Math.PI * 2);
+            voronoiCtx.fill();
+            voronoiCtx.fillStyle = '#fff';
+            voronoiCtx.font = 'bold 14px Arial';
+            voronoiCtx.textAlign = 'center';
+            voronoiCtx.fillText('S', voronoiStart.x, voronoiStart.y + 5);
+            
+            // 终点
+            voronoiCtx.fillStyle = '#e74c3c';
+            voronoiCtx.beginPath();
+            voronoiCtx.arc(voronoiEnd.x, voronoiEnd.y, 12, 0, Math.PI * 2);
+            voronoiCtx.fill();
+            voronoiCtx.fillStyle = '#fff';
+            voronoiCtx.fillText('E', voronoiEnd.x, voronoiEnd.y + 5);
+        }
+        
+        function drawVoronoiPath() {
+            if (voronoiPath.length < 2) return;
+            
+            voronoiCtx.strokeStyle = '#f39c12';
+            voronoiCtx.lineWidth = 4;
+            voronoiCtx.setLineDash([10, 5]);
+            
+            voronoiCtx.beginPath();
+            voronoiCtx.moveTo(voronoiPath[0].x, voronoiPath[0].y);
+            
+            for (let i = 1; i < voronoiPath.length; i++) {
+                voronoiCtx.lineTo(voronoiPath[i].x, voronoiPath[i].y);
+            }
+            
+            voronoiCtx.stroke();
+            voronoiCtx.setLineDash([]);
+            
+            // 绘制路径点
+            voronoiPath.forEach(point => {
+                voronoiCtx.fillStyle = '#f39c12';
+                voronoiCtx.beginPath();
+                voronoiCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                voronoiCtx.fill();
+            });
+        }
+        
+        // 计算点到多边形障碍物的距离
+        function distToPolygon(p, polygon) {
+            // 首先检查点是否在多边形内部
+            if (isPointInPolygon(p, polygon)) {
+                return 0;
+            }
+
+            // 计算点到多边形各边的最小距离
+            let minDist = Infinity;
+            for (let i = 0; i < polygon.length; i++) {
+                const p1 = polygon[i];
+                const p2 = polygon[(i + 1) % polygon.length];
+                const dist = pointToSegmentDistance(p, p1, p2);
+                minDist = Math.min(minDist, dist);
+            }
+            return minDist;
+        }
+
+        // 判断点是否在多边形内部（射线法）
+        function isPointInPolygon(p, polygon) {
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i].x, yi = polygon[i].y;
+                const xj = polygon[j].x, yj = polygon[j].y;
+
+                if (((yi > p.y) !== (yj > p.y)) &&
+                    (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            return inside;
+        }
+
+        // 计算点到线段的距离
+        function pointToSegmentDistance(p, p1, p2) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const lengthSq = dx * dx + dy * dy;
+
+            if (lengthSq === 0) {
+                // 线段退化为点
+                return Math.sqrt((p.x - p1.x) ** 2 + (p.y - p1.y) ** 2);
+            }
+
+            // 计算投影点参数 t
+            let t = ((p.x - p1.x) * dx + (p.y - p1.y) * dy) / lengthSq;
+            t = Math.max(0, Math.min(1, t)); // 限制在线段范围内
+
+            // 计算最近点
+            const nearestX = p1.x + t * dx;
+            const nearestY = p1.y + t * dy;
+
+            return Math.sqrt((p.x - nearestX) ** 2 + (p.y - nearestY) ** 2);
+        }
+        
+        // 生成泰森多边形（Voronoi图）
+        function generateVoronoi() {
+            console.log('开始生成泰森多边形...');
+            voronoiEdges = [];
+
+            if (voronoiSites.length < 3) {
+                console.error('需要至少3个种子点来生成Voronoi图');
+                return;
+            }
+
+            const step = 4; // 采样分辨率
+            const threshold = 1.5; // 距离差阈值
+
+            const voronoiPoints = [];
+
+            // 通过采样计算每个像素所属的Voronoi区域
+            for (let x = step; x < voronoiCanvas.width - step; x += step) {
+                for (let y = step; y < voronoiCanvas.height - step; y += step) {
+                    const p = {x, y};
+
+                    // 计算到所有种子点的距离
+                    const distances = voronoiSites.map(site => {
+                        return Math.sqrt((p.x - site.x) ** 2 + (p.y - site.y) ** 2);
+                    });
+
+                    // 找到最近的和次近的种子点
+                    let min1 = Infinity, min2 = Infinity;
+                    let idx1 = -1, idx2 = -1;
+
+                    distances.forEach((d, i) => {
+                        if (d < min1) {
+                            min2 = min1;
+                            idx2 = idx1;
+                            min1 = d;
+                            idx1 = i;
+                        } else if (d < min2) {
+                            min2 = d;
+                            idx2 = i;
+                        }
+                    });
+
+                    // 如果两个最近距离接近，该点在Voronoi边上
+                    if (Math.abs(min1 - min2) < threshold) {
+                        voronoiPoints.push(p);
+                    }
+                }
+            }
+
+            console.log(`找到 ${voronoiPoints.length} 个Voronoi边界点`);
+
+            // 连接相邻的Voronoi边界点形成边
+            const connected = new Set();
+            const connectionDist = step * 2.5;
+
+            for (let i = 0; i < voronoiPoints.length; i++) {
+                const neighbors = [];
+
+                for (let j = 0; j < voronoiPoints.length; j++) {
+                    if (i === j) continue;
+
+                    const dist = Math.sqrt(
+                        (voronoiPoints[j].x - voronoiPoints[i].x) ** 2 +
+                        (voronoiPoints[j].y - voronoiPoints[i].y) ** 2
+                    );
+
+                    if (dist < connectionDist) {
+                        neighbors.push({index: j, dist: dist});
+                    }
+                }
+
+                // 连接最近的邻居
+                neighbors.sort((a, b) => a.dist - b.dist);
+                const maxConnections = 2;
+
+                for (let k = 0; k < Math.min(neighbors.length, maxConnections); k++) {
+                    const idx = neighbors[k].index;
+                    const edgeKey = i < idx ? `${i}-${idx}` : `${idx}-${i}`;
+
+                    if (!connected.has(edgeKey)) {
+                        voronoiEdges.push({
+                            p1: voronoiPoints[i],
+                            p2: voronoiPoints[idx]
+                        });
+                        connected.add(edgeKey);
+                    }
+                }
+            }
+
+            console.log(`生成 ${voronoiEdges.length} 条泰森多边形边`);
+            renderVoronoi();
+        }
+        
+        // 在泰森多边形中查找路径
+        function findPathVoronoi() {
+            if (voronoiEdges.length === 0) {
+                alert('请先生成泰森多边形！');
+                return;
+            }
+
+            console.log('开始查找路径...');
+
+            // 将Voronoi边的中点作为图的节点
+            const nodes = [];
+            const edgeToNode = new Map();
+
+            voronoiEdges.forEach((edge, i) => {
+                const midPoint = {
+                    x: (edge.p1.x + edge.p2.x) / 2,
+                    y: (edge.p1.y + edge.p2.y) / 2
+                };
+                nodes.push(midPoint);
+                edgeToNode.set(i, nodes.length - 1);
+            });
+
+            // 添加起点和终点
+            const startNode = voronoiStart;
+            const endNode = voronoiEnd;
+            const startIdx = nodes.length;
+            const endIdx = nodes.length + 1;
+            nodes.push(startNode, endNode);
+
+            // 构建邻接表
+            const graph = {};
+            nodes.forEach((_, i) => graph[i] = []);
+
+            // 连接相邻的Voronoi边
+            voronoiEdges.forEach((edge1, i1) => {
+                const n1 = edgeToNode.get(i1);
+                const mid1 = nodes[n1];
+
+                voronoiEdges.forEach((edge2, i2) => {
+                    if (i1 >= i2) return;
+
+                    // 检查两条边是否相交或足够接近
+                    const n2 = edgeToNode.get(i2);
+                    const dist = Math.sqrt(
+                        (mid1.x - nodes[n2].x) ** 2 +
+                        (mid1.y - nodes[n2].y) ** 2
+                    );
+
+                    // 如果两条边足够接近，连接它们
+                    if (dist < 50) {
+                        graph[n1].push({node: n2, weight: dist});
+                        graph[n2].push({node: n1, weight: dist});
+                    }
+                });
+            });
+
+            // 连接起点到最近的Voronoi边
+            let minStartDist = Infinity;
+            let nearestStartEdge = -1;
+            voronoiEdges.forEach((edge, i) => {
+                const midPoint = nodes[edgeToNode.get(i)];
+                const dist = Math.sqrt(
+                    (midPoint.x - startNode.x) ** 2 +
+                    (midPoint.y - startNode.y) ** 2
+                );
+                if (dist < minStartDist) {
+                    minStartDist = dist;
+                    nearestStartEdge = i;
+                }
+            });
+
+            if (nearestStartEdge !== -1) {
+                const n = edgeToNode.get(nearestStartEdge);
+                graph[startIdx].push({node: n, weight: minStartDist});
+                graph[n].push({node: startIdx, weight: minStartDist});
+            }
+
+            // 连接终点到最近的Voronoi边
+            let minEndDist = Infinity;
+            let nearestEndEdge = -1;
+            voronoiEdges.forEach((edge, i) => {
+                const midPoint = nodes[edgeToNode.get(i)];
+                const dist = Math.sqrt(
+                    (midPoint.x - endNode.x) ** 2 +
+                    (midPoint.y - endNode.y) ** 2
+                );
+                if (dist < minEndDist) {
+                    minEndDist = dist;
+                    nearestEndEdge = i;
+                }
+            });
+
+            if (nearestEndEdge !== -1) {
+                const n = edgeToNode.get(nearestEndEdge);
+                graph[endIdx].push({node: n, weight: minEndDist});
+                graph[n].push({node: endIdx, weight: minEndDist});
+            }
+
+            console.log(`图构建完成: ${nodes.length} 个节点`);
+
+            // A*算法
+            const openSet = new Set([startIdx]);
+            const openList = [{node: startIdx, f: heuristic(startIdx, nodes, endNode)}];
+            const cameFrom = {};
+            const gScore = {};
+            const closedSet = new Set();
+            gScore[startIdx] = 0;
+
+            function heuristic(idx, nodes, end) {
+                const p = nodes[idx];
+                return Math.sqrt(
+                    Math.pow(end.x - p.x, 2) +
+                    Math.pow(end.y - p.y, 2)
+                );
+            }
+
+            let iterations = 0;
+            const maxIterations = nodes.length * 20;
+
+            while (openList.length > 0 && iterations < maxIterations) {
+                iterations++;
+
+                // 找f值最小的节点
+                openList.sort((a, b) => a.f - b.f);
+                const currentObj = openList.shift();
+                const current = currentObj.node;
+
+                openSet.delete(current);
+
+                // 检查是否到达终点
+                if (current === endIdx) {
+                    // 回溯路径
+                    voronoiPath = [];
+                    let node = endIdx;
+                    let safetyCounter = 0;
+                    while (node !== undefined && safetyCounter < maxIterations) {
+                        voronoiPath.unshift(nodes[node]);
+                        node = cameFrom[node];
+                        safetyCounter++;
+                    }
+                    console.log(`找到路径！路径长度: ${voronoiPath.length}, 迭代次数: ${iterations}`);
+                    renderVoronoi();
+                    return;
+                }
+
+                closedSet.add(current);
+
+                // 处理邻居
+                for (const neighbor of graph[current]) {
+                    const neighborNode = neighbor.node;
+
+                    if (closedSet.has(neighborNode)) continue;
+
+                    const tentativeG = gScore[current] + neighbor.weight;
+
+                    if (tentativeG < (gScore[neighborNode] || Infinity)) {
+                        cameFrom[neighborNode] = current;
+                        gScore[neighborNode] = tentativeG;
+                        const f = tentativeG + heuristic(neighborNode, nodes, endNode);
+
+                        if (!openSet.has(neighborNode)) {
+                            openSet.add(neighborNode);
+                            openList.push({node: neighborNode, f: f});
+                        }
+                    }
+                }
+            }
+
+            console.log(`未找到路径。迭代次数: ${iterations}, 已处理节点: ${closedSet.size}`);
+            alert('未找到路径！');
+        }
+        
+        function findNearestPointOnEdges(point) {
+            let minDist = Infinity;
+            let nearest = null;
+            
+            voronoiEdges.forEach(edge => {
+                const p1 = edge.p1;
+                const p2 = edge.p2;
+                
+                // 计算点到线段的距离
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const t = Math.max(0, Math.min(1, 
+                    ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / (dx * dx + dy * dy)
+                ));
+                
+                const nearestOnSegment = {
+                    x: p1.x + t * dx,
+                    y: p1.y + t * dy
+                };
+                
+                const dist = Math.sqrt(
+                    Math.pow(point.x - nearestOnSegment.x, 2) +
+                    Math.pow(point.y - nearestOnSegment.y, 2)
+                );
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = nearestOnSegment;
+                }
+            });
+            
+            return minDist < 100 ? nearest : null;
+        }
+        
+        function renderVoronoi() {
+            drawVoronoiGrid();
+            drawVoronoiEdges();
+            // 不绘制障碍物
+            drawVoronoiPath();
+            drawVoronoiStartEnd();
+        }
+        
+        function resetVoronoi() {
+            voronoiEdges = [];
+            voronoiPath = [];
+            initVoronoiObstacles();
+            renderVoronoi();
+        }
+
+        function addRandomObstacleVoronoi() {
+            // 添加随机离散点作为新的种子点
+            const x = 100 + Math.random() * 700;
+            const y = 80 + Math.random() * 340;
+
+            voronoiSites.push({x: x, y: y});
+
+            voronoiEdges = [];
+            voronoiPath = [];
+            renderVoronoi();
+        }
+        
+        // ==================== 其他方法演示 ====================
+        function drawGridDiagram() {
+            const canvas = document.getElementById('gridCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i <= canvas.width; i += 25) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let j = 0; j <= canvas.height; j += 25) {
+                ctx.beginPath();
+                ctx.moveTo(0, j);
+                ctx.lineTo(canvas.width, j);
+                ctx.stroke();
+            }
+            
+            // 绘制障碍物
+            ctx.fillStyle = '#9b59b6';
+            for (let i = 5; i < 12; i++) {
+                ctx.fillRect(i * 25, 5 * 25, 25, 50);
+            }
+            
+            // 绘制路径
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath();
+            ctx.moveTo(25, 125);
+            ctx.lineTo(100, 125);
+            ctx.lineTo(100, 200);
+            ctx.lineTo(300, 200);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 起点终点
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath();
+            ctx.arc(25, 125, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(300, 200, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawPRMDiagram() {
+            const canvas = document.getElementById('prmCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 障碍物
+            ctx.fillStyle = '#9b59b6';
+            ctx.beginPath();
+            ctx.arc(120, 150, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(230, 220, 35, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 采样点
+            const points = [
+                {x: 30, y: 80}, {x: 60, y: 150}, {x: 90, y: 220},
+                {x: 150, y: 100}, {x: 180, y: 180}, {x: 210, y: 120},
+                {x: 270, y: 150}, {x: 300, y: 200}, {x: 320, y: 100}
+            ];
+            
+            // 连接边
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 1.5;
+            const connections = [[0,1], [1,2], [0,3], [3,4], [4,5], [5,6], [6,7], [7,8], [3,5], [5,7]];
+            connections.forEach(([i, j]) => {
+                ctx.beginPath();
+                ctx.moveTo(points[i].x, points[i].y);
+                ctx.lineTo(points[j].x, points[j].y);
+                ctx.stroke();
+            });
+            
+            // 绘制点
+            points.forEach(p => {
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 路径
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            ctx.lineTo(points[1].x, points[1].y);
+            ctx.lineTo(points[3].x, points[3].y);
+            ctx.lineTo(points[5].x, points[5].y);
+            ctx.lineTo(points[7].x, points[7].y);
+            ctx.lineTo(points[8].x, points[8].y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 起点终点
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath();
+            ctx.arc(points[0].x, points[0].y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(points[8].x, points[8].y, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawRRTDiagram() {
+            const canvas = document.getElementById('rrtCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 障碍物
+            ctx.fillStyle = '#9b59b6';
+            ctx.fillRect(100, 80, 60, 100);
+            ctx.beginPath();
+            ctx.arc(220, 180, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(260, 100, 50, 80);
+            
+            // 树结构
+            const tree = [
+                {from: null, to: {x: 30, y: 150}},
+                {from: {x: 30, y: 150}, to: {x: 80, y: 100}},
+                {from: {x: 80, y: 100}, to: {x: 150, y: 120}},
+                {from: {x: 150, y: 120}, to: {x: 200, y: 80}},
+                {from: {x: 200, y: 80}, to: {x: 280, y: 90}},
+                {from: {x: 30, y: 150}, to: {x: 70, y: 200}},
+                {from: {x: 70, y: 200}, to: {x: 140, y: 230}},
+                {from: {x: 140, y: 230}, to: {x: 220, y: 250}},
+                {from: {x: 220, y: 250}, to: {x: 300, y: 220}},
+                {from: {x: 280, y: 90}, to: {x: 320, y: 150}}
+            ];
+            
+            // 绘制边
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            tree.forEach(edge => {
+                if (edge.from) {
+                    ctx.beginPath();
+                    ctx.moveTo(edge.from.x, edge.from.y);
+                    ctx.lineTo(edge.to.x, edge.to.y);
+                    ctx.stroke();
+                }
+            });
+            
+            // 绘制节点
+            tree.forEach(edge => {
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(edge.to.x, edge.to.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 路径
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath();
+            ctx.moveTo(30, 150);
+            ctx.lineTo(80, 100);
+            ctx.lineTo(150, 120);
+            ctx.lineTo(200, 80);
+            ctx.lineTo(280, 90);
+            ctx.lineTo(320, 150);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 起点终点
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath();
+            ctx.arc(30, 150, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(320, 150, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // 初始化所有画布
+        function initAll() {
+            initVisibilityObstacles();
+            renderVisibility();
+            
+            initVoronoiObstacles();
+            renderVoronoi();
+            
+            drawGridDiagram();
+            drawPRMDiagram();
+            drawRRTDiagram();
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = initAll;
+    </script>
+</body>
+</html>
