@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA - よくある質問</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans, Meiryo", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .qa-item {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .qa-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .question {
+            color: #3498db;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .question::before {
+            content: "Q:";
+            background: #3498db;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 4px;
+            margin-right: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .answer {
+            color: #555;
+            padding-left: 45px;
+        }
+
+        .answer::before {
+            content: "A:";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #e9ecef;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", monospace;
+            color: #e74c3c;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0288d1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-right: 5px;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .note::before {
+            content: "ℹ️ ";
+            font-weight: bold;
+        }
+
+        /* 言語切り替えフローティングボタン */
+        .lang-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .lang-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .lang-btn.active {
+            background: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 言語切り替えフローティングボタン -->
+    <div class="lang-switcher">
+        <a href="QA.html" class="lang-btn" title="中文">中文</a>
+        <a href="QA_en.html" class="lang-btn" title="English">English</a>
+        <a href="QA_ja.html" class="lang-btn active" title="日本語">日本語</a>
+    </div>
+
+    <div class="container">
+        <h1>📚 OSM/SUMO/OpenDRIVE - よくある質問</h1>
+
+        <div class="qa-item">
+            <div class="question">OSMのリンクのHighway属性はどのような値を取ることができ、その意味は何ですか？</div>
+            <div class="answer">
+                <p>OSM（OpenStreetMap）のhighway属性は、道路の種類と等級を記述するために使用されます。以下は、一般的なhighway属性値とその意味です：</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>highway値</th>
+                            <th>意味</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>高速道路</td>
+                            <td>最高等級の道路、通常複数車線、中央分離帯、出入制限が厳しい</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td>高速道路接続路</td>
+                            <td>高速道路と他の道路を接続するランプまたは出入り口道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td>主要道路</td>
+                            <td>重要な主要道路、高速道路に似ているが完全に分離されていない場合がある</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk_link</code></td>
+                            <td>主要道路接続路</td>
+                            <td>主要道路に接続する道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td>一次道路</td>
+                            <td>重要な地域レベルの道路、主要都市と地域を接続する</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary_link</code></td>
+                            <td>一次道路接続路</td>
+                            <td>一次道路に接続する道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td>二次道路</td>
+                            <td>町や村を接続する道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary_link</code></td>
+                            <td>二次道路接続路</td>
+                            <td>二次道路に接続する道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td>三次道路</td>
+                            <td>小さな町や村を接続するローカル道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td>住宅地道路</td>
+                            <td>住宅地内の道路、通常速度制限が低い</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td>サービス道路</td>
+                            <td>駐車場、商業地域などへ通じるサービス道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>unclassified</code></td>
+                            <td>未分類道路</td>
+                            <td>他の分類に適さない小さな道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td>生活道路</td>
+                            <td>歩行者優先の通り、車両は減速する必要がある</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>歩行者専用道路</td>
+                            <td>歩行者のみ通行できる道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>track</code></td>
+                            <td>未舗装道路</td>
+                            <td>農業または林業用途の未舗装道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>path</code></td>
+                            <td>小道</td>
+                            <td>歩行者または自転車のみ使用できる小道</td>
+                        </tr>
+                        <tr>
+                            <td><code>cycleway</code></td>
+                            <td>自転車道</td>
+                            <td>自転車専用の道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>busway</code></td>
+                            <td>バス専用道路</td>
+                            <td>バス専用の道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>steps</code></td>
+                            <td>階段</td>
+                            <td>階段、通常車両には適さない</td>
+                        </tr>
+                        <tr>
+                            <td><code>footway</code></td>
+                            <td>歩道</td>
+                            <td>歩行者のみが使用できる歩道</td>
+                        </tr>
+                        <tr>
+                            <td><code>bridleway</code></td>
+                            <td>馬道</td>
+                            <td>馬が使用できる道路</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>注意：</strong>highway属性は道路だけでなく、歩道、自転車道などの非車道も含まれます。SUMOまたはOpenDRIVEに変換する際、異なるhighway値は異なる道路タイプと属性にマッピングされます。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question">QGISでOSMデータに対応する衛星画像を追加するにはどうすればよいですか？</div>
+            <div class="answer">
+                <p>QGISでOSMデータに対応する衛星画像を追加するにはいくつかの方法があります。以下に一般的な方法を示します：</p>
+
+                <h3>方法1：XYZタイルを使用する（推奨）</h3>
+                <ol>
+                    <li>QGISを開き、左パネルで<strong>"XYZ Tiles"</strong>レイヤーを見つける（通常は最下部）</li>
+                    <li>"XYZ Tiles"を右クリックし、<strong>"New Connection..."</strong>を選択する</li>
+                    <li>ポップアップウィンドウで入力する：
+                        <ul>
+                            <li><strong>Name:</strong> 接続に名前を付ける（例：Google Satellite、Bing Mapsなど）</li>
+                            <li><strong>URL:</strong> 衛星画像サービスのURLを入力する（以下の一般的なサービスを参照）</li>
+                        </ul>
+                    </li>
+                    <li>"OK"をクリックして接続を保存する</li>
+                    <li>作成した接続をダブルクリックすると、衛星画像がキャンバスに読み込まれる</li>
+                    <li>衛星画像レイヤーがOSMデータレイヤーの<strong>下</strong>にあることを確認する（ドラッグしてレイヤー順序を調整）</li>
+                </ol>
+
+                <h3>一般的な衛星画像サービスURL：</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>サービス名</th>
+                            <th>URL</th>
+                            <th>特徴</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Google Satellite</strong></td>
+                            <td><code>https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}</code></td>
+                            <td>高解像度衛星画像、世界中をカバー</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Google Hybrid</strong></td>
+                            <td><code>https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}</code></td>
+                            <td>衛星画像+道路ラベル</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bing Maps Satellite</strong></td>
+                            <td><code>https://ecn.t3.tiles.virtualearth.net/tiles/a{q}.jpeg?g=1</code></td>
+                            <td>Microsoft Bing衛星画像</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Esri Satellite</strong></td>
+                            <td><code>https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}</code></td>
+                            <td>Esriグローバル画像</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenStreetMap Standard</strong></td>
+                            <td><code>https://tile.openstreetmap.org/{z}/{x}/{y}.png</code></td>
+                            <td>OSM標準地図（衛星ではない）</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CartoDB Dark Matter</strong></td>
+                            <td><code>https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png</code></td>
+                            <td>ダークベースマップ（データ視覚化に適している）</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>方法2：QGISプラグインを使用する</h3>
+                <ol>
+                    <li>メニューバーから<strong>Plugins → Manage and Install Plugins...</strong>を選択する</li>
+                    <li>以下のいずれかのプラグインを検索してインストールする：
+                        <ul>
+                            <li><strong>QuickMapServices</strong> - 様々な地図サービスを迅速に追加</li>
+                            <li><strong>QuickOSM</strong> - OSMデータ専用のプラグイン</li>
+                        </ul>
+                    </li>
+                    <li>インストール後、メニューバーまたはツールバーでプラグインを見つけ、必要な衛星画像サービスを選択する</li>
+                </ol>
+
+                <h3>方法3：WMS/WMTSサービスを使用する</h3>
+                <ol>
+                    <li>メニューバーから<strong>Layer → Add Layer → Add WMS/WMTS Layer...</strong>を選択する</li>
+                    <li>"New"をクリックして新しい接続を作成する</li>
+                    <li>WMSサービスのURLを入力する（例：ArcGISオンラインサービスなど）</li>
+                    <li>必要なレイヤーを選択して地図に追加する</li>
+                </ol>
+
+                <h3>実用的なヒント：</h3>
+                <ul>
+                    <li><strong>透明度の調整：</strong>衛星画像レイヤーをダブルクリックし、"Transparency"タブで透明度を調整して、OSMデータを簡単に確認する</li>
+                    <li><strong>投影法の設定：</strong>すべてのレイヤーが同じ座標系を使用していることを確認する（通常はWGS 84 / Pseudo-Mercator、EPSG:3857が推奨される）</li>
+                    <li><strong>キャッシュ管理：</strong>Settings → Options → Map Optionsでキャッシュの場所を管理できる</li>
+                    <li><strong>ブックマーク：</strong>View → New Bookmarkを使用して頻繁に使用する場所を保存し、ナビゲーションを容易にする</li>
+                </ul>
+
+                <div class="note">
+                    <strong>注意：</strong>衛星画像サービスの使用には、それぞれのサービス利用規約の遵守が必要です。一部のサービスにはAPIキーが必要な場合や使用制限がある場合があります。Google Mapsサービスは一部の地域でプロキシアクセスが必要になる場合があります。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question">OSMデータのhighway属性値のうち、どれを保持し、どれを削除すべきですか？</div>
+            <div class="answer">
+                <p>OSMデータをSUMOまたはOpenDRIVEに変換する際、使用シナリオに基づいて特定のhighway属性値を保持または削除する必要があります。以下は、一般的な属性値の分類推奨事項です：</p>
+
+                <h3>📊 保持 vs 削除 分類表</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>highway値</th>
+                            <th>推奨</th>
+                            <th>理由</th>
+                            <th>適用シナリオ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>NULL</code></td>
+                            <td><span style="color:red">削除</span></td>
+                            <td>データが不足または未記入、道路タイプを特定できない</td>
+                            <td>すべてのシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>footway</code></td>
+                            <td><span style="color:orange">オプション</span></td>
+                            <td>歩行者のみ通行可能、車両は通行できない（歩道分析が必要な場合を除く）</td>
+                            <td>歩行者シミュレーション、バリアフリー分析</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>都市の主要道路、重要な交通動脈</td>
+                            <td>すべてのシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>住宅地道路、都市交通ネットワークの重要な構成要素</td>
+                            <td>都市シミュレーション</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td><span style="color:orange">オプション</span></td>
+                            <td>サービス道路（駐車場、ガソリンスタンドの出入り口など）、通常は主要道路網に参加しない</td>
+                            <td>駐車場分析、詳細なマイクロシミュレーション</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>三次道路、重要なノードを接続する支線道路</td>
+                            <td>都市、地域シミュレーション</td>
+                        </tr>
+                        <tr>
+                            <td><code>unclassified</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>未分類の公共道路、通常は小道だが通行可能</td>
+                            <td>完全な道路網が必要なシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>二次道路、町を接続する重要な道路</td>
+                            <td>すべてのシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>高速道路、最高等級の道路</td>
+                            <td>すべてのシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>高速道路接続路（ランプ）、高速道路への出入りに必須</td>
+                            <td>すべてのシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td><span style="color:green">保持</span></td>
+                            <td>主要道路、高速道路に似ているが出入り口制御が少ない</td>
+                            <td>すべてのシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td><span style="color:orange">オプション</span></td>
+                            <td>生活道路、歩行者優先、速度が非常に低い</td>
+                            <td>住宅地の詳細シミュレーション</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td><span style="color:red">削除</span></td>
+                            <td>歩行者専用道路、車両は通行できない</td>
+                            <td>車両シミュレーションシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>path</code></td>
+                            <td><span style="color:red">削除</span></td>
+                            <td>小道、歩行者または自転車のみ</td>
+                            <td>車両シミュレーションシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>track</code></td>
+                            <td><span style="color:red">削除</span></td>
+                            <td>未舗装道路、農業または林業用途</td>
+                            <td>都市シミュレーションシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>cycleway</code></td>
+                            <td><span style="color:red">削除</span></td>
+                            <td>自転車道、自転車のみ</td>
+                            <td>車両シミュレーションシナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>steps</code></td>
+                            <td><span style="color:red">削除</span></td>
+                            <td>階段、車両は通行できない</td>
+                            <td>すべての車両シナリオ</td>
+                        </tr>
+                        <tr>
+                            <td><code>busway</code></td>
+                            <td><span style="color:orange">オプション</span></td>
+                            <td>バス専用道路</td>
+                            <td>バスシミュレーション</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>🎯 使用シナリオに基づくフィルタリング推奨事項</h3>
+
+                <h4>シナリオ1：都市道路交通シミュレーション（最も一般的）</h4>
+                <p><strong>保持：</strong>motorway, motorway_link, trunk, primary, secondary, tertiary, residential, unclassified</p>
+                <p><strong>削除：</strong>NULL, pedestrian, footway, path, track, cycleway, steps, busway, living_street</p>
+                <p><strong>オプション：</strong>service（駐車場などの詳細な施設が必要ない場合は削除可）</p>
+
+                <h4>シナリオ2：高速道路網シミュレーション</h4>
+                <p><strong>保持：</strong>motorway, motorway_link, trunk, trunk_link, primary</p>
+                <p><strong>削除：</strong>他のすべてのタイプ</p>
+
+                <h4>シナリオ3：詳細なマイクロシミュレーション（支線道路を含む）</h4>
+                <p><strong>保持：</strong>motorway, motorway_link, trunk, primary, primary_link, secondary, secondary_link, tertiary, residential, unclassified, service</p>
+                <p><strong>削除：</strong>NULL, pedestrian, path, track, cycleway, steps</p>
+                <p><strong>オプション：</strong>footway, living_street, busway</p>
+
+                <h4>シナリオ4：多モード交通シミュレーション（車両+歩行者+自転車）</h4>
+                <p><strong>保持：</strong>通行可能なすべての道路タイプ（NULLを除く）</p>
+                <p><strong>削除：</strong>NULL</p>
+
+                <h3>💡 処理推奨事項</h3>
+
+                <div class="note">
+                    <strong>推奨処理フロー：</strong>
+                    <ol>
+                        <li><strong>データクリーニング：</strong>まず<code>NULL</code>値を削除する、これは削除すべき無効なデータ</li>
+                        <li><strong>シナリオマッチング：</strong>シミュレーション目標に基づいて適切な道路タイプの組み合わせを選択する</li>
+                        <li><strong>接続性チェック：</strong>道路を削除した後、道路網の接続性をチェックし、孤立した断点を回避する</li>
+                        <li><strong>属性マッピング：</strong>保持されたOSM highway値をSUMO/OpenDRIVEの道路タイプに正しくマッピングする</li>
+                    </ol>
+                </div>
+
+                <h3>🔧 SUMOで不要な道路タイプを削除する方法</h3>
+                <p><code>netconvert</code>ツールを使用する際、<code>--remove-edges</code>または<code>--keep-edges</code>パラメータを使用できます：</p>
+                <pre><code># 指定されたタイプのみを保持
+netconvert --osm-files input.osm --output-file output.net.xml --keep-edges.by-type highway.primary,highway.secondary,highway.tertiary,highway.residential
+
+# 指定されたタイプを削除
+netconvert --osm-files input.osm --output-file output.net.xml --remove-edges.by-type highway.footway,highway.path,highway.track</code></pre>
+
+                <div class="note">
+                    <strong>特別な注意：</strong>提供された検出リストに基づき、<strong>primary, residential, tertiary, unclassifiedを保持</strong>し、<strong>NULLを削除</strong>し、<strong>serviceとfootwayはニーズに応じてオプション</strong>とすることを推奨します。この4つの保持されたタイプは、都市道路網の主要な部分をすでにカバーしています。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question">SUMOの道路タイプにはどのようなものがありますか？OpenDRIVEのスタイル（Type）の道路タイプにはどのようなものがありますか？</div>
+            <div class="answer">
+                <p>SUMOとOpenDRIVEにはそれぞれ独自の道路タイプシステムがあります。以下に詳細な比較と説明を示します：</p>
+
+                <h3>📊 SUMO道路タイプ（Type）</h3>
+                <p>SUMOは"type"属性を使用して道路タイプを定義し、速度、車線数、優先度などの情報を含みます。一般的なSUMO道路タイプには以下が含まれます：</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>タイプ名</th>
+                            <th>説明</th>
+                            <th>速度制限 (km/h)</th>
+                            <th>車線数</th>
+                            <th>優先度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>高速道路</td>
+                            <td>130</td>
+                            <td>2-4</td>
+                            <td>15</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td>高速道路接続路</td>
+                            <td>80</td>
+                            <td>1-2</td>
+                            <td>13</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td>主要道路</td>
+                            <td>100</td>
+                            <td>2-3</td>
+                            <td>12</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk_link</code></td>
+                            <td>主要道路接続路</td>
+                            <td>60</td>
+                            <td>1-2</td>
+                            <td>11</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td>一次道路</td>
+                            <td>80</td>
+                            <td>2</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary_link</code></td>
+                            <td>一次道路接続路</td>
+                            <td>50</td>
+                            <td>1-2</td>
+                            <td>9</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td>二次道路</td>
+                            <td>60</td>
+                            <td>1-2</td>
+                            <td>8</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary_link</code></td>
+                            <td>二次道路接続路</td>
+                            <td>40</td>
+                            <td>1</td>
+                            <td>7</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td>三次道路</td>
+                            <td>50</td>
+                            <td>1-2</td>
+                            <td>6</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td>住宅地道路</td>
+                            <td>30</td>
+                            <td>1-2</td>
+                            <td>5</td>
+                        </tr>
+                        <tr>
+                            <td><code>unclassified</code></td>
+                            <td>未分類道路</td>
+                            <td>30</td>
+                            <td>1</td>
+                            <td>4</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td>サービス道路</td>
+                            <td>20</td>
+                            <td>1</td>
+                            <td>3</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>歩行者専用道路</td>
+                            <td>10</td>
+                            <td>1</td>
+                            <td>1</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td>生活道路</td>
+                            <td>15</td>
+                            <td>1</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>🛣️ OpenDRIVE道路タイプ（Type）</h3>
+                <p>OpenDRIVEは`type`要素を使用して道路タイプを定義し、道路ルール、速度制限などの情報を含みます。OpenDRIVE標準で定義されている道路タイプ：</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>タイプ値</th>
+                            <th>説明</th>
+                            <th>一般的用途</th>
+                            <th>対応SUMOタイプ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>unknown</code></td>
+                            <td>不明なタイプ</td>
+                            <td>デフォルトタイプ、明確に分類されていない</td>
+                            <td>unclassified</td>
+                        </tr>
+                        <tr>
+                            <td><code>rural</code></td>
+                            <td>農村道路</td>
+                            <td>農村地域の道路</td>
+                            <td>tertiary, secondary</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>高速道路</td>
+                            <td>高速道路、出入り口制限あり</td>
+                            <td>motorway</td>
+                        </tr>
+                        <tr>
+                            <td><code>town</code></td>
+                            <td>都市道路</td>
+                            <td>都市の道路</td>
+                            <td>primary, secondary</td>
+                        </tr>
+                        <tr>
+                            <td><code>lowSpeed</code></td>
+                            <td>低速道路</td>
+                            <td>速度制限が低い道路</td>
+                            <td>residential, service</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>歩行者区域</td>
+                            <td>歩行者のみ通行できる区域</td>
+                            <td>pedestrian</td>
+                        </tr>
+                        <tr>
+                            <td><code>townExpressway</code></td>
+                            <td>都市高速道路</td>
+                            <td>都市高速道路</td>
+                            <td>primary, trunk</td>
+                        </tr>
+                        <tr>
+                            <td><code>townCollector</code></td>
+                            <td>都市集散道路</td>
+                            <td>道路と目的地を接続する道路</td>
+                            <td>secondary, tertiary</td>
+                        </tr>
+                        <tr>
+                            <td><code>townArterial</code></td>
+                            <td>都市主要道路</td>
+                            <td>都市の主要交通動脈</td>
+                            <td>primary, trunk</td>
+                        </tr>
+                        <tr>
+                            <td><code>townPrivate</code></td>
+                            <td>都市プライベート道路</td>
+                            <td>プライベート住宅地道路</td>
+                            <td>service, residential</td>
+                        </tr>
+                        <tr>
+                            <td><code>townLocal</code></td>
+                            <td>都市ローカル道路</td>
+                            <td>ローカル道路</td>
+                            <td>residential, unclassified</td>
+                        </tr>
+                        <tr>
+                            <td><code>town pedestrian</code></td>
+                            <td>都市歩行者道路</td>
+                            <td>都市内の歩行者区域</td>
+                            <td>pedestrian</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>🔄 SUMOとOpenDRIVEタイプマッピング</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>OSM highway</th>
+                            <th>SUMO type</th>
+                            <th>OpenDRIVE type</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>motorway</td>
+                            <td>motorway</td>
+                            <td>高速道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td>motorway_link</td>
+                            <td>townExpressway</td>
+                            <td>高速道路接続路</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td>trunk</td>
+                            <td>townArterial</td>
+                            <td>主要道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td>primary</td>
+                            <td>townArterial</td>
+                            <td>一次道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td>secondary</td>
+                            <td>townCollector</td>
+                            <td>二次道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td>tertiary</td>
+                            <td>townCollector</td>
+                            <td>三次道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td>residential</td>
+                            <td>townLocal</td>
+                            <td>住宅地道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td>service</td>
+                            <td>townPrivate</td>
+                            <td>サービス道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>pedestrian</td>
+                            <td>pedestrian</td>
+                            <td>歩行者専用道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td>living_street</td>
+                            <td>pedestrian</td>
+                            <td>生活道路</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>📐 SUMO道路タイプXML例</h3>
+                <pre><code>&lt;types&gt;
+  &lt;type id="motorway" speed="36.11" numberLanes="3" priority="15"&gt;
+    &lt;lane id="motorway.0" index="0" speed="36.11" length="0" shape=""/&gt;
+    &lt;lane id="motorway.1" index="1" speed="36.11" length="0" shape=""/&gt;
+    &lt;lane id="motorway.2" index="2" speed="36.11" length="0" shape=""/&gt;
+  &lt;/type&gt;
+  
+  &lt;type id="primary" speed="22.22" numberLanes="2" priority="10"&gt;
+    &lt;lane id="primary.0" index="0" speed="22.22" length="0" shape=""/&gt;
+    &lt;lane id="primary.1" index="1" speed="22.22" length="0" shape=""/&gt;
+  &lt;/type&gt;
+&lt;/types&gt;</code></pre>
+
+                <h3>📐 OpenDRIVE道路タイプXML例</h3>
+                <pre><code>&lt;road name="MainStreet" length="500.00" id="1" junction="-1"&gt;
+  &lt;link&gt;
+    &lt;predecessor elementType="junction" elementId="100"/&gt;
+    &lt;successor elementType="junction" elementId="101"/&gt;
+  &lt;/link&gt;
+  
+  &lt;type s="0.00" type="town" country="JPN"&gt;
+    &lt;speed max="13.89" unit="m/s"/&gt;  &lt;!-- 50 km/h --&gt;
+    &lt;rule speedMax="13.89"/&gt;
+  &lt;/type&gt;
+  
+  &lt;planView&gt;
+    &lt;geometry s="0.00" x="0.00" y="0.00" hdg="0.00" length="500.00"&gt;
+      &lt;line/&gt;
+    &lt;/geometry&gt;
+  &lt;/planView&gt;
+  
+  &lt;lanes&gt;
+    &lt;laneSection s="0.00"&gt;
+      &lt;center&gt;
+        &lt;lane id="0" type="driving" level="true"&gt;
+          &lt;width s="0.00" a="3.50"/&gt;
+        &lt;/lane&gt;
+      &lt;/center&gt;
+      &lt;right&gt;
+        &lt;lane id="-1" type="driving" level="true"&gt;
+          &lt;width s="0.00" a="3.50"/&gt;
+        &lt;/lane&gt;
+        &lt;lane id="-2" type="driving" level="true"&gt;
+          &lt;width s="0.00" a="3.50"/&gt;
+        &lt;/lane&gt;
+      &lt;/right&gt;
+    &lt;/laneSection&gt;
+  &lt;/lanes&gt;
+&lt;/road&gt;</code></pre>
+
+                <h3>⚙️ カスタム道路タイプ</h3>
+                
+                <h4>SUMOでのカスタムタイプ</h4>
+                <pre><code>&lt;type id="my_custom_type" speed="15.00" numberLanes="2" priority="7"
+      allow="passenger car taxi bus truck"&gt;
+  &lt;restriction speed="15.00"/&gt;
+&lt;/type&gt;</code></pre>
+
+                <h4>OpenDRIVEでのカスタムタイプ</h4>
+                <p>OpenDRIVEは任意の文字列をタイプ値として使用できますが、標準タイプを使用することが推奨されます：</p>
+                <pre><code>&lt;type s="0.00" type="custom_highway" country="JPN"&gt;
+  &lt;speed max="33.33" unit="m/s"/&gt;  &lt;!-- 120 km/h --&gt;
+  &lt;rule speedMax="33.33"/&gt;
+&lt;/type&gt;</code></pre>
+
+                <h3>📝 主な違いの説明</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>特徴</th>
+                            <th>SUMO</th>
+                            <th>OpenDRIVE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>タイプ定義</td>
+                            <td>&lt;types&gt;要素内で集中的に定義</td>
+                            <td>各&lt;road&gt;要素内で個別に定義</td>
+                        </tr>
+                        <tr>
+                            <td>速度単位</td>
+                            <td>m/s</td>
+                            <td>m/sまたはkm/h</td>
+                        </tr>
+                        <tr>
+                            <td>車線定義</td>
+                            <td>タイプ内で定義</td>
+                            <td>&lt;lanes&gt;要素内で定義</td>
+                        </tr>
+                        <tr>
+                            <td>優先度</td>
+                            <td>数値が高いほど優先度が高い</td>
+                            <td>タイプで暗黙的に定義</td>
+                        </tr>
+                        <tr>
+                            <td>車両制限</td>
+                            <td>allow/disallow属性</td>
+                            <td>車線タイプ属性</td>
+                        </tr>
+                        <tr>
+                            <td>拡張性</td>
+                            <td>カスタムタイプをサポート</td>
+                            <td>任意のタイプ文字列をサポート</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>注意：</strong>SUMOからOpenDRIVEに変換する際、SUMOの道路タイプはOpenDRIVEの標準タイプにマッピングされます。マッピング関係を正確に制御する必要がある場合は、SUMOのタイプファイルを使用するか、生成されたOpenDRIVEファイルを手動で編集できます。
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

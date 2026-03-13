@@ -1,0 +1,4 @@
+Error: On processing option '--help-osm':
+ No option with the name 'help-osm' exists.
+Error: Could not parse commandline options.
+Quitting (on error).

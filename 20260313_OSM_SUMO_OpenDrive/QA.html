@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA - 常见问题解答</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .qa-item {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .qa-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .question {
+            color: #3498db;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .question::before {
+            content: "Q:";
+            background: #3498db;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 4px;
+            margin-right: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .answer {
+            color: #555;
+            padding-left: 45px;
+        }
+
+        .answer::before {
+            content: "A:";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #e9ecef;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", monospace;
+            color: #e74c3c;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0288d1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-right: 5px;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .note::before {
+            content: "ℹ️ ";
+            font-weight: bold;
+        }
+
+        /* 语言切换悬浮标签样式 */
+        .lang-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .lang-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .lang-btn.active {
+            background: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 语言切换悬浮标签 -->
+    <div class="lang-switcher">
+        <a href="QA.html" class="lang-btn active" title="中文">中文</a>
+        <a href="QA_en.html" class="lang-btn" title="English">English</a>
+        <a href="QA_ja.html" class="lang-btn" title="日本語">日本語</a>
+    </div>
+
+    <div class="container">
+        <h1>📚 OSM/SUMO/OpenDRIVE - 常见问题解答</h1>
+
+        <div class="qa-item">
+            <div class="question">OSM中的Link的 Highway属性可以取哪些值，并说明该值的含义</div>
+            <div class="answer">
+                <p>OSM（OpenStreetMap）中的 highway 属性用于描述道路的类型和等级。以下是常见的高速公路属性值及其含义：</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>highway 值</th>
+                            <th>含义</th>
+                            <th>描述</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>高速公路</td>
+                            <td>最高等级的道路，通常有多个车道，隔离带，出入口控制严格</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td>高速公路连接线</td>
+                            <td>连接高速公路与其他道路的匝道或出入口道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td>主干道</td>
+                            <td>重要的主要道路，类似于高速公路但可能没有完全隔离</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk_link</code></td>
+                            <td>主干道连接线</td>
+                            <td>连接主干道的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td>主要道路</td>
+                            <td>重要的地区级道路，连接主要城市和地区</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary_link</code></td>
+                            <td>主要道路连接线</td>
+                            <td>连接主要道路的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td>次要道路</td>
+                            <td>连接城镇和村庄的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary_link</code></td>
+                            <td>次要道路连接线</td>
+                            <td>连接次要道路的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td>三级道路</td>
+                            <td>连接小城镇和村庄的本地道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td>住宅区道路</td>
+                            <td>住宅区内的道路，通常限速较低</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td>服务道路</td>
+                            <td>通往停车场、商业区等的服务性道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>unclassified</code></td>
+                            <td>未分类道路</td>
+                            <td>较小的道路，不适合归入其他分类</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td>生活街道</td>
+                            <td>行人优先的街道，车辆需减速慢行</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>步行街</td>
+                            <td>仅限行人通行的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>track</code></td>
+                            <td>土路</td>
+                            <td>农业或林业用途的未铺装道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>path</code></td>
+                            <td>小径</td>
+                            <td>仅供行人或自行车使用的小路</td>
+                        </tr>
+                        <tr>
+                            <td><code>cycleway</code></td>
+                            <td>自行车道</td>
+                            <td>专供自行车使用的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>busway</code></td>
+                            <td>公交专用道</td>
+                            <td>专供公交车使用的道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>steps</code></td>
+                            <td>台阶</td>
+                            <td>楼梯或台阶，通常不适合车辆通行</td>
+                        </tr>
+                        <tr>
+                            <td><code>footway</code></td>
+                            <td>人行道</td>
+                            <td>仅供行人使用的人行道</td>
+                        </tr>
+                        <tr>
+                            <td><code>bridleway</code></td>
+                            <td>马道</td>
+                            <td>可供马匹使用的道路</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>注意：</strong>highway 属性不仅用于公路，还包括步行道、自行车道等非机动车道路。在转换为 SUMO 或 OpenDRIVE 时，不同的 highway 值会被映射为不同的道路类型和属性。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question">在QGIS中如何添加OSM数据对应的卫星影像</div>
+            <div class="answer">
+                <p>在QGIS中添加OSM数据对应的卫星影像有多种方法，以下是几种常用的方式：</p>
+
+                <h3>方法一：使用XYZ Tiles（推荐）</h3>
+                <ol>
+                    <li>打开QGIS，在左侧面板中找到<strong>"XYZ Tiles"</strong>图层（通常在最下方）</li>
+                    <li>右键点击"XYZ Tiles"，选择<strong>"New Connection..."</strong></li>
+                    <li>在弹出窗口中输入：
+                        <ul>
+                            <li><strong>Name:</strong> 给连接起个名字（如：Google Satellite, Bing Maps等）</li>
+                            <li><strong>URL:</strong> 输入卫星影像服务的URL（见下文常用服务）</li>
+                        </ul>
+                    </li>
+                    <li>点击"OK"保存连接</li>
+                    <li>双击刚才创建的连接，卫星影像就会加载到画布中</li>
+                    <li>确保卫星影像图层位于OSM数据图层<strong>下方</strong>（拖动调整图层顺序）</li>
+                </ol>
+
+                <h3>常用卫星影像服务URL：</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>服务名称</th>
+                            <th>URL</th>
+                            <th>特点</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Google Satellite</strong></td>
+                            <td><code>https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}</code></td>
+                            <td>高分辨率卫星影像，全球覆盖</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Google Hybrid</strong></td>
+                            <td><code>https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}</code></td>
+                            <td>卫星影像+道路标注</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bing Maps Satellite</strong></td>
+                            <td><code>https://ecn.t3.tiles.virtualearth.net/tiles/a{q}.jpeg?g=1</code></td>
+                            <td>微软必应卫星影像</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Esri Satellite</strong></td>
+                            <td><code>https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}</code></td>
+                            <td>Esri全球影像</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenStreetMap Standard</strong></td>
+                            <td><code>https://tile.openstreetmap.org/{z}/{x}/{y}.png</code></td>
+                            <td>OSM标准地图（非卫星）</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CartoDB Dark Matter</strong></td>
+                            <td><code>https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png</code></td>
+                            <td>深色底图（适合数据展示）</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>方法二：使用QGIS插件</h3>
+                <ol>
+                    <li>在菜单栏选择<strong>Plugins → Manage and Install Plugins...</strong></li>
+                    <li>搜索并安装以下任一插件：
+                        <ul>
+                            <li><strong>QuickMapServices</strong> - 快速添加多种地图服务</li>
+                            <li><strong>QuickOSM</strong> - 专门用于OSM数据的插件</li>
+                        </ul>
+                    </li>
+                    <li>安装后，在菜单栏或工具栏中找到插件，选择所需的卫星影像服务</li>
+                </ol>
+
+                <h3>方法三：使用WMS/WMTS服务</h3>
+                <ol>
+                    <li>在菜单栏选择<strong>Layer → Add Layer → Add WMS/WMTS Layer...</strong></li>
+                    <li>点击"New"创建新连接</li>
+                    <li>输入WMS服务的URL（如：ArcGIS在线服务等）</li>
+                    <li>选择所需的图层并添加到地图</li>
+                </ol>
+
+                <h3>实用技巧：</h3>
+                <ul>
+                    <li><strong>调整透明度：</strong>双击卫星影像图层，在"Transparency"选项卡中调整透明度，便于查看OSM数据</li>
+                    <li><strong>设置投影：</strong>确保所有图层使用相同的坐标系（通常推荐WGS 84 / Pseudo-Mercator, EPSG:3857）</li>
+                    <li><strong>缓存管理：</strong>在Settings → Options → Map Options中可以管理缓存位置</li>
+                    <li><strong>书签：</strong>使用View → New Bookmark保存常用位置，方便快速导航</li>
+                </ul>
+
+                <div class="note">
+                    <strong>注意：</strong>卫星影像服务的使用需要遵守各自的服务条款，某些服务可能需要API密钥或有使用限制。Google Maps服务在某些地区可能需要代理访问。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question">OSM数据中的highway属性值哪些需要保留，哪些需要删除</div>
+            <div class="answer">
+                <p>在OSM数据转换为SUMO或OpenDRIVE时，需要根据使用场景选择保留或删除某些highway属性值。以下是常见属性值的分类建议：</p>
+
+                <h3>📊 保留 vs 删除 分类表</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>highway 值</th>
+                            <th>建议</th>
+                            <th>原因说明</th>
+                            <th>适用场景</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>NULL</code></td>
+                            <td><span style="color:red">删除</span></td>
+                            <td>数据缺失或未填写，无法确定道路类型</td>
+                            <td>所有场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>footway</code></td>
+                            <td><span style="color:orange">可选</span></td>
+                            <td>仅供行人使用，车辆无法通行（除非需要人行道分析）</td>
+                            <td>行人仿真、无障碍分析</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>城市主干道，重要交通要道</td>
+                            <td>所有场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>住宅区道路，城市交通网络的重要组成部分</td>
+                            <td>城市仿真</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td><span style="color:orange">可选</span></td>
+                            <td>服务性道路（停车场、加油站出入口等），通常不参与主路网</td>
+                            <td>停车场分析、详细微观仿真</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>三级道路，连接重要节点的支路</td>
+                            <td>城市、区域仿真</td>
+                        </tr>
+                        <tr>
+                            <td><code>unclassified</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>未分类的公共道路，通常是小路但可通行</td>
+                            <td>需要完整路网的场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>次要道路，连接城镇的重要道路</td>
+                            <td>所有场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>高速公路，最高等级道路</td>
+                            <td>所有场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>高速公路连接线（匝道），进出高速必需</td>
+                            <td>所有场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td><span style="color:green">保留</span></td>
+                            <td>主干道，类似高速但出入口控制较少</td>
+                            <td>所有场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td><span style="color:orange">可选</span></td>
+                            <td>生活街道，行人优先，车速极低</td>
+                            <td>居住区详细仿真</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td><span style="color:red">删除</span></td>
+                            <td>步行街，车辆无法通行</td>
+                            <td>车辆仿真场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>path</code></td>
+                            <td><span style="color:red">删除</span></td>
+                            <td>小径，仅供行人或自行车</td>
+                            <td>车辆仿真场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>track</code></td>
+                            <td><span style="color:red">删除</span></td>
+                            <td>土路，农业或林业用途</td>
+                            <td>城市仿真场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>cycleway</code></td>
+                            <td><span style="color:red">删除</span></td>
+                            <td>自行车道，仅供自行车</td>
+                            <td>车辆仿真场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>steps</code></td>
+                            <td><span style="color:red">删除</span></td>
+                            <td>台阶，车辆无法通行</td>
+                            <td>所有车辆场景</td>
+                        </tr>
+                        <tr>
+                            <td><code>busway</code></td>
+                            <td><span style="color:orange">可选</span></td>
+                            <td>公交专用道</td>
+                            <td>公交仿真</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>🎯 根据使用场景的筛选建议</h3>
+
+                <h4>场景1：城市道路交通仿真（最常用）</h4>
+                <p><strong>保留：</strong>motorway, motorway_link, trunk, primary, secondary, tertiary, residential, unclassified</p>
+                <p><strong>删除：</strong>NULL, pedestrian, footway, path, track, cycleway, steps, busway, living_street</p>
+                <p><strong>可选：</strong>service（如果不需要停车场等详细设施，可删除）</p>
+
+                <h4>场景2：高速公路网络仿真</h4>
+                <p><strong>保留：</strong>motorway, motorway_link, trunk, trunk_link, primary</p>
+                <p><strong>删除：</strong>其他所有类型</p>
+
+                <h4>场景3：详细微观仿真（包含支路）</h4>
+                <p><strong>保留：</strong>motorway, motorway_link, trunk, primary, primary_link, secondary, secondary_link, tertiary, residential, unclassified, service</p>
+                <p><strong>删除：</strong>NULL, pedestrian, path, track, cycleway, steps</p>
+                <p><strong>可选：</strong>footway, living_street, busway</p>
+
+                <h4>场景4：多模式交通仿真（车+行人+自行车）</h4>
+                <p><strong>保留：</strong>所有能通行的道路类型（除NULL外）</p>
+                <p><strong>删除：</strong>NULL</p>
+
+                <h3>💡 处理建议</h3>
+
+                <div class="note">
+                    <strong>推荐处理流程：</strong>
+                    <ol>
+                        <li><strong>数据清洗：</strong>首先删除 <code>NULL</code> 值，这是必须清除的无效数据</li>
+                        <li><strong>场景匹配：</strong>根据仿真目标选择合适的道路类型组合</li>
+                        <li><strong>连接性检查：</strong>删除道路后检查路网连通性，避免孤立的断点</li>
+                        <li><strong>属性映射：</strong>将保留的OSM highway值正确映射到SUMO/OpenDRIVE的道路类型</li>
+                    </ol>
+                </div>
+
+                <h3>🔧 在SUMO中如何删除不需要的道路类型</h3>
+                <p>使用 <code>netconvert</code> 工具时，可以使用 <code>--remove-edges</code> 或 <code>--keep-edges</code> 参数：</p>
+                <pre><code># 只保留指定类型
+netconvert --osm-files input.osm --output-file output.net.xml --keep-edges.input-type highway.primary,highway.secondary,highway.tertiary,highway.residential
+
+# 删除指定类型
+netconvert --osm-files input.osm --output-file output.net.xml --remove-edges.input-type highway.footway,highway.path,highway.track</code></pre>
+
+                <div class="note">
+                    <strong>特别提示：</strong>根据您提供的检测列表，建议<strong>保留 primary, residential, tertiary, unclassified</strong>，<strong>删除 NULL</strong>，<strong>service 和 footway 根据需求可选</strong>。这四个保留下来的类型已经覆盖了城市道路网的主要部分。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question">SUMO的道路中，道路类型有哪些？OpenDRIVE样式（Type）中，道路类型有哪些？</div>
+            <div class="answer">
+                <p>SUMO和OpenDRIVE都有各自定义的道路类型系统。以下是详细的对比和说明：</p>
+
+                <h3>📊 SUMO 道路类型（Type）</h3>
+                <p>SUMO使用"type"属性定义道路类型，包含速度、车道数、优先级等信息。常见的SUMO道路类型包括：</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>类型名称</th>
+                            <th>描述</th>
+                            <th>限速 (km/h)</th>
+                            <th>车道数</th>
+                            <th>优先级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>高速公路</td>
+                            <td>130</td>
+                            <td>2-4</td>
+                            <td>15</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td>高速公路连接线</td>
+                            <td>80</td>
+                            <td>1-2</td>
+                            <td>13</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td>主干道</td>
+                            <td>100</td>
+                            <td>2-3</td>
+                            <td>12</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk_link</code></td>
+                            <td>主干道连接线</td>
+                            <td>60</td>
+                            <td>1-2</td>
+                            <td>11</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td>主要道路</td>
+                            <td>80</td>
+                            <td>2</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary_link</code></td>
+                            <td>主要道路连接线</td>
+                            <td>50</td>
+                            <td>1-2</td>
+                            <td>9</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td>次要道路</td>
+                            <td>60</td>
+                            <td>1-2</td>
+                            <td>8</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary_link</code></td>
+                            <td>次要道路连接线</td>
+                            <td>40</td>
+                            <td>1</td>
+                            <td>7</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td>三级道路</td>
+                            <td>50</td>
+                            <td>1-2</td>
+                            <td>6</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td>住宅区道路</td>
+                            <td>30</td>
+                            <td>1-2</td>
+                            <td>5</td>
+                        </tr>
+                        <tr>
+                            <td><code>unclassified</code></td>
+                            <td>未分类道路</td>
+                            <td>30</td>
+                            <td>1</td>
+                            <td>4</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td>服务道路</td>
+                            <td>20</td>
+                            <td>1</td>
+                            <td>3</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>步行街</td>
+                            <td>10</td>
+                            <td>1</td>
+                            <td>1</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td>生活街道</td>
+                            <td>15</td>
+                            <td>1</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>🛣️ OpenDRIVE 道路类型（Type）</h3>
+                <p>OpenDRIVE使用`type`元素定义道路类型，包含道路规则、速度限制等信息。OpenDRIVE标准定义的道路类型：</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>类型值</th>
+                            <th>描述</th>
+                            <th>常见用途</th>
+                            <th>对应SUMO类型</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>unknown</code></td>
+                            <td>未知类型</td>
+                            <td>默认类型，未明确分类</td>
+                            <td>unclassified</td>
+                        </tr>
+                        <tr>
+                            <td><code>rural</code></td>
+                            <td>乡村道路</td>
+                            <td>乡村地区的道路</td>
+                            <td>tertiary, secondary</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>高速公路</td>
+                            <td>高速公路，限制出入</td>
+                            <td>motorway</td>
+                        </tr>
+                        <tr>
+                            <td><code>town</code></td>
+                            <td>城镇道路</td>
+                            <td>城市道路</td>
+                            <td>primary, secondary</td>
+                        </tr>
+                        <tr>
+                            <td><code>lowSpeed</code></td>
+                            <td>低速道路</td>
+                            <td>限速较低的道路</td>
+                            <td>residential, service</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>行人区域</td>
+                            <td>仅供行人通行的区域</td>
+                            <td>pedestrian</td>
+                        </tr>
+                        <tr>
+                            <td><code>townExpressway</code></td>
+                            <td>城镇快速路</td>
+                            <td>城市快速路</td>
+                            <td>primary, trunk</td>
+                        </tr>
+                        <tr>
+                            <td><code>townCollector</code></td>
+                            <td>城镇集散道路</td>
+                            <td>连接道路和目的地的道路</td>
+                            <td>secondary, tertiary</td>
+                        </tr>
+                        <tr>
+                            <td><code>townArterial</code></td>
+                            <td>城镇主干道</td>
+                            <td>城市主要交通干道</td>
+                            <td>primary, trunk</td>
+                        </tr>
+                        <tr>
+                            <td><code>townPrivate</code></td>
+                            <td>城镇私人道路</td>
+                            <td>私人住宅区道路</td>
+                            <td>service, residential</td>
+                        </tr>
+                        <tr>
+                            <td><code>townLocal</code></td>
+                            <td>城镇本地道路</td>
+                            <td>本地道路</td>
+                            <td>residential, unclassified</td>
+                        </tr>
+                        <tr>
+                            <td><code>town pedestrian</code></td>
+                            <td>城镇步行道</td>
+                            <td>城镇中的步行区域</td>
+                            <td>pedestrian</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>🔄 SUMO 与 OpenDRIVE 类型映射</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>OSM highway</th>
+                            <th>SUMO type</th>
+                            <th>OpenDRIVE type</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>motorway</code></td>
+                            <td>motorway</td>
+                            <td>motorway</td>
+                            <td>高速公路</td>
+                        </tr>
+                        <tr>
+                            <td><code>motorway_link</code></td>
+                            <td>motorway_link</td>
+                            <td>townExpressway</td>
+                            <td>高速连接线</td>
+                        </tr>
+                        <tr>
+                            <td><code>trunk</code></td>
+                            <td>trunk</td>
+                            <td>townArterial</td>
+                            <td>主干道</td>
+                        </tr>
+                        <tr>
+                            <td><code>primary</code></td>
+                            <td>primary</td>
+                            <td>townArterial</td>
+                            <td>主要道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>secondary</code></td>
+                            <td>secondary</td>
+                            <td>townCollector</td>
+                            <td>次要道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>tertiary</code></td>
+                            <td>tertiary</td>
+                            <td>townCollector</td>
+                            <td>三级道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>residential</code></td>
+                            <td>residential</td>
+                            <td>townLocal</td>
+                            <td>住宅区道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>service</code></td>
+                            <td>service</td>
+                            <td>townPrivate</td>
+                            <td>服务道路</td>
+                        </tr>
+                        <tr>
+                            <td><code>pedestrian</code></td>
+                            <td>pedestrian</td>
+                            <td>pedestrian</td>
+                            <td>步行街</td>
+                        </tr>
+                        <tr>
+                            <td><code>living_street</code></td>
+                            <td>living_street</td>
+                            <td>pedestrian</td>
+                            <td>生活街道</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>📐 SUMO 道路类型 XML 示例</h3>
+                <pre><code>&lt;types&gt;
+  &lt;type id="motorway" speed="36.11" numberLanes="3" priority="15"&gt;
+    &lt;lane id="motorway.0" index="0" speed="36.11" length="0" shape=""/&gt;
+    &lt;lane id="motorway.1" index="1" speed="36.11" length="0" shape=""/&gt;
+    &lt;lane id="motorway.2" index="2" speed="36.11" length="0" shape=""/&gt;
+  &lt;/type&gt;
+  
+  &lt;type id="primary" speed="22.22" numberLanes="2" priority="10"&gt;
+    &lt;lane id="primary.0" index="0" speed="22.22" length="0" shape=""/&gt;
+    &lt;lane id="primary.1" index="1" speed="22.22" length="0" shape=""/&gt;
+  &lt;/type&gt;
+&lt;/types&gt;</code></pre>
+
+                <h3>📐 OpenDRIVE 道路类型 XML 示例</h3>
+                <pre><code>&lt;road name="MainStreet" length="500.00" id="1" junction="-1"&gt;
+  &lt;link&gt;
+    &lt;predecessor elementType="junction" elementId="100"/&gt;
+    &lt;successor elementType="junction" elementId="101"/&gt;
+  &lt;/link&gt;
+  
+  &lt;type s="0.00" type="town" country="JPN"&gt;
+    &lt;speed max="13.89" unit="m/s"/&gt;  &lt;!-- 50 km/h --&gt;
+    &lt;rule speedMax="13.89"/&gt;
+  &lt;/type&gt;
+  
+  &lt;planView&gt;
+    &lt;geometry s="0.00" x="0.00" y="0.00" hdg="0.00" length="500.00"&gt;
+      &lt;line/&gt;
+    &lt;/geometry&gt;
+  &lt;/planView&gt;
+  
+  &lt;lanes&gt;
+    &lt;laneSection s="0.00"&gt;
+      &lt;center&gt;
+        &lt;lane id="0" type="driving" level="true"&gt;
+          &lt;width s="0.00" a="3.50"/&gt;
+        &lt;/lane&gt;
+      &lt;/center&gt;
+      &lt;right&gt;
+        &lt;lane id="-1" type="driving" level="true"&gt;
+          &lt;width s="0.00" a="3.50"/&gt;
+        &lt;/lane&gt;
+        &lt;lane id="-2" type="driving" level="true"&gt;
+          &lt;width s="0.00" a="3.50"/&gt;
+        &lt;/lane&gt;
+      &lt;/right&gt;
+    &lt;/laneSection&gt;
+  &lt;/lanes&gt;
+&lt;/road&gt;</code></pre>
+
+                <h3>⚙️ 自定义道路类型</h3>
+                
+                <h4>SUMO 中自定义类型</h4>
+                <pre><code>&lt;type id="my_custom_type" speed="15.00" numberLanes="2" priority="7"
+      allow="passenger car taxi bus truck"&gt;
+  &lt;restriction speed="15.00"/&gt;
+&lt;/type&gt;</code></pre>
+
+                <h4>OpenDRIVE 中自定义类型</h4>
+                <p>OpenDRIVE 允许使用任意字符串作为类型值，但建议使用标准类型：</p>
+                <pre><code>&lt;type s="0.00" type="custom_highway" country="JPN"&gt;
+  &lt;speed max="33.33" unit="m/s"/&gt;  &lt;!-- 120 km/h --&gt;
+  &lt;rule speedMax="33.33"/&gt;
+&lt;/type&gt;</code></pre>
+
+                <h3>📝 关键差异说明</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>特性</th>
+                            <th>SUMO</th>
+                            <th>OpenDRIVE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>类型定义</td>
+                            <td>集中定义在 &lt;types&gt; 元素中</td>
+                            <td>每个 &lt;road&gt; 元素中单独定义</td>
+                        </tr>
+                        <tr>
+                            <td>速度单位</td>
+                            <td>m/s</td>
+                            <td>m/s 或 km/h</td>
+                        </tr>
+                        <tr>
+                            <td>车道定义</td>
+                            <td>在类型中定义</td>
+                            <td>在 &lt;lanes&gt; 元素中定义</td>
+                        </tr>
+                        <tr>
+                            <td>优先级</td>
+                            <td>数值越高优先级越高</td>
+                            <td>通过类型隐式定义</td>
+                        </tr>
+                        <tr>
+                            <td>车辆限制</td>
+                            <td>allow/disallow 属性</td>
+                            <td>车道类型属性</td>
+                        </tr>
+                        <tr>
+                            <td>扩展性</td>
+                            <td>支持自定义类型</td>
+                            <td>支持任意类型字符串</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>注意：</strong>从 SUMO 转换到 OpenDRIVE 时，SUMO 的道路类型会被映射到 OpenDRIVE 的标准类型。如果需要精确控制映射关系，可以使用 SUMO 的 type 文件或手动编辑生成的 OpenDRIVE 文件。
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
