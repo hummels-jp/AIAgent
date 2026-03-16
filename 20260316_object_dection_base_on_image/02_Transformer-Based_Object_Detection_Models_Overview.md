@@ -1,6 +1,11 @@
 ---
 
-> **🌐 Language / 语言 / 言語**: [中文](基于Transformer的目标检测模型综述.md) | [English](Transformer-Based_Object_Detection_Models_Overview.md) | [日本語](Transformerベース物体検出モデル総説.md)
+<div align="center">
+  <strong>🌐 Language / 语言 / 言語:</strong>
+  <a href="基于Transformer的目标检测模型综述.md">中文</a> |
+  <a href="Transformer-Based_Object_Detection_Models_Overview.md">English</a> |
+  <a href="Transformerベース物体検出モデル総説.md">日本語</a>
+</div>
 
 ---
 
@@ -677,7 +682,19 @@ High Speed → RT-DETR, Conditional DETR
 
 ---
 
-> **🌐 Language / 语言 / 言語**: [中文](基于Transformer的目标检测模型综述.md) | [English](Transformer-Based_Object_Detection_Models_Overview.md) | [日本語](Transformerベース物体検出モデル総説.md)
+<div align="center">
+  <strong>🌐 Language / 语言 / 言語:</strong>
+  <a href="01_基于Transformer的目标检测模型综述.md">中文</a> |
+  <a href="01_Transformer-Based_Object_Detection_Models_Overview.md">English</a> |
+  <a href="01_Transformerベース物体検出モデル総説.md">日本語</a>
+</div>
+
+<div align="center">
+  <strong>🌐 Language / 语言 / 言語:</strong>
+  <a href="基于Transformer的目标检测模型综述.md">中文</a> |
+  <a href="Transformer-Based_Object_Detection_Models_Overview.md">English</a> |
+  <a href="Transformerベース物体検出モデル総説.md">日本語</a>
+</div>
 
 ---
 
