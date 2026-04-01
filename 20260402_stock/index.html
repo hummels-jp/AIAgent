@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CNN 恐慌指数 - 实时市场情绪</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: #111827;
+      --bg-card-hover: #1f2937;
+      --fear: #ff4757;
+      --neutral: #ffa502;
+      --greed: #00d4aa;
+      --text-primary: #ffffff;
+      --text-secondary: #94a3b8;
+      --border-color: #1e293b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background-image: 
+        radial-gradient(ellipse at top, rgba(0, 212, 170, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(255, 71, 87, 0.05) 0%, transparent 50%);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header h1 span {
+      font-size: 2rem;
+    }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .refresh-btn.loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Gauge Dashboard */
+    .gauge-container {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 2.5rem 2rem 2rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .gauge {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      aspect-ratio: 2/1;
+    }
+
+    .gauge-bg, .gauge-fill {
+      position: absolute;
+      width: 100%;
+      height: 200%;
+      top: 0;
+      left: 0;
+    }
+
+    .gauge-bg {
+      background: conic-gradient(
+        from 180deg at 50% 100%,
+        #374151 0deg,
+        #4b5563 90deg,
+        #374151 180deg
+      );
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+    }
+
+    .gauge-fill {
+      clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+      transition: background 0.5s ease;
+    }
+
+    .gauge-center {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      padding-top: 1rem;
+    }
+
+    .gauge-value {
+      font-size: 4rem;
+      font-weight: 700;
+      line-height: 1;
+      transition: color 0.3s ease;
+    }
+
+    .gauge-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      padding: 0.25rem 1rem;
+      border-radius: 20px;
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+
+    .gauge-scale {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+      padding: 0 1rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .gauge-scale span:first-child {
+      color: var(--fear);
+    }
+
+    .gauge-scale span:last-child {
+      color: var(--greed);
+    }
+
+    /* Data Cards */
+    .data-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .data-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 1.25rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .data-card-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .data-card-value {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    /* Advice Panel */
+    .advice-panel {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      transition: border-color 0.3s ease;
+    }
+
+    .advice-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .advice-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      transition: background 0.3s ease;
+    }
+
+    .advice-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .advice-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .advice-description {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+
+    .advice-list {
+      list-style: none;
+    }
+
+    .advice-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .advice-list li:last-child {
+      border-bottom: none;
+    }
+
+    .advice-list li::before {
+      content: "→";
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: color 0.3s ease;
+    }
+
+    /* Loading State */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 14, 23, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--greed);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    /* Error State */
+    .error-message {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid var(--fear);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .error-message p {
+      color: var(--fear);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Auto-refresh indicator */
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 1rem;
+      justify-content: center;
+    }
+
+    .auto-refresh .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--greed);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .gauge-value {
+        font-size: 3rem;
+      }
+
+      .data-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>
+        <span>📈</span>
+        CNN 恐慌指数
+      </h1>
+      <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        刷新数据
+      </button>
+    </header>
+
+    <!-- Error Message -->
+    <div class="error-message" id="errorMessage" style="display: none;">
+      <p id="errorText">加载失败，请稍后重试</p>
+      <button class="refresh-btn" onclick="fetchData()" style="margin: 0 auto;">
+        重新加载
+      </button>
+    </div>
+
+    <!-- Gauge Dashboard -->
+    <div class="gauge-container" id="gaugeContainer">
+      <div class="gauge">
+        <div class="gauge-bg"></div>
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-center">
+          <div class="gauge-value" id="gaugeValue">--</div>
+          <div class="gauge-label" id="gaugeLabel">加载中</div>
+        </div>
+      </div>
+      <div class="gauge-scale">
+        <span>极度恐慌</span>
+        <span>极度贪婪</span>
+      </div>
+    </div>
+
+    <!-- Data Cards -->
+    <div class="data-cards">
+      <div class="data-card">
+        <div class="data-card-label">数据更新时间</div>
+        <div class="data-card-value" id="updateTime">--</div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-label">市场情绪</div>
+        <div class="data-card-value" id="sentiment">--</div>
+      </div>
+      <div class="data-card">
+        <div class="data-card-label">数据来源</div>
+        <div class="data-card-value">Alternative.me</div>
+      </div>
+    </div>
+
+    <!-- Advice Panel -->
+    <div class="advice-panel" id="advicePanel">
+      <div class="advice-header">
+        <div class="advice-icon" id="adviceIcon">💡</div>
+        <div>
+          <div class="advice-title" id="adviceTitle">加载中...</div>
+          <div class="advice-subtitle" id="adviceSubtitle">正在获取投资建议</div>
+        </div>
+      </div>
+      <p class="advice-description" id="adviceDescription">
+        正在加载市场分析...
+      </p>
+      <ul class="advice-list" id="adviceList">
+        <li>等待数据加载...</li>
+      </ul>
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div class="auto-refresh">
+      <span class="dot"></span>
+      <span>每 60 秒自动刷新</span>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script>
+    // 配置
+    const API_URL = 'https://api.alternative.me/fng/';
+    const REFRESH_INTERVAL = 60000; // 60秒
+
+    // DOM 元素
+    const gaugeFill = document.getElementById('gaugeFill');
+    const gaugeValue = document.getElementById('gaugeValue');
+    const gaugeLabel = document.getElementById('gaugeLabel');
+    const updateTime = document.getElementById('updateTime');
+    const sentiment = document.getElementById('sentiment');
+    const advicePanel = document.getElementById('advicePanel');
+    const adviceIcon = document.getElementById('adviceIcon');
+    const adviceTitle = document.getElementById('adviceTitle');
+    const adviceSubtitle = document.getElementById('adviceSubtitle');
+    const adviceDescription = document.getElementById('adviceDescription');
+    const adviceList = document.getElementById('adviceList');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const errorMessage = document.getElementById('errorMessage');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // 根据数值获取等级信息
+    function getLevelInfo(value) {
+      const valueNum = parseInt(value);
+      
+      if (valueNum <= 10) {
+        return {
+          level: 'extreme_fear',
+          label: '极度恐慌',
+          color: '#ff4757',
+          icon: '😱',
+          sentimentText: '极度恐慌'
+        };
+      } else if (valueNum <= 25) {
+        return {
+          level: 'fear',
+          label: '恐慌',
+          color: '#ff6b7a',
+          icon: '😰',
+          sentimentText: '恐慌'
+        };
+      } else if (valueNum <= 45) {
+        return {
+          level: 'neutral_fear',
+          label: '轻度恐慌',
+          color: '#ffa502',
+          icon: '😟',
+          sentimentText: '轻度恐慌'
+        };
+      } else if (valueNum <= 55) {
+        return {
+          level: 'neutral',
+          label: '中性',
+          color: '#ffd93d',
+          icon: '😐',
+          sentimentText: '中性'
+        };
+      } else if (valueNum <= 75) {
+        return {
+          level: 'greed',
+          label: '贪婪',
+          color: '#6bcb77',
+          icon: '😊',
+          sentimentText: '贪婪'
+        };
+      } else {
+        return {
+          level: 'extreme_greed',
+          label: '极度贪婪',
+          color: '#00d4aa',
+          icon: '🤑',
+          sentimentText: '极度贪婪'
+        };
+      }
+    }
+
+    // 获取操作建议
+    function getAdvice(value) {
+      const valueNum = parseInt(value);
+      const level = getLevelInfo(valueNum);
+      
+      const adviceData = {
+        extreme_fear: {
+          title: '极度恐慌市场',
+          subtitle: '历史上最佳买入时机之一',
+          description: '当市场处于极度恐慌时，往往是资产价格被低估的时候。历史数据显示，在恐慌指数处于极低水平时买入，长期来看通常能获得不错的回报。但请注意，这并不意味着市场会立即反弹。',
+          recommendations: [
+            '考虑逐步建仓优质资产，分批买入降低风险',
+            '关注被错杀的优质股票和指数基金',
+            '保持足够的现金储备以应对可能的继续下跌',
+            '避免恐慌性抛售已有的投资',
+            '做好持有3-5年以上的心理准备'
+          ]
+        },
+        fear: {
+          title: '恐慌市场',
+          subtitle: '逆向投资机会显现',
+          description: '市场情绪偏向恐慌，但尚未达到极端水平。这是开始关注投资机会的好时机，但需要谨慎选择标的。',
+          recommendations: [
+            '开始关注优质资产的低吸机会',
+            '分散投资，不要把所有资金集中在单一标的',
+            '可以考虑定投策略，平滑成本',
+            '密切关注基本面良好的标的',
+            '保持警惕，等待更明确的买入信号'
+          ]
+        },
+        neutral_fear: {
+          title: '轻度恐慌市场',
+          subtitle: '观望与准备阶段',
+          description: '市场存在一定恐慌情绪，但相对可控。建议保持观望，等待更好的时机。',
+          recommendations: [
+            '保持现有仓位，不盲目加仓',
+            '密切关注市场动态和新闻',
+            '开始研究潜在的投资标的',
+            '设置理想买入点位提醒',
+            '控制仓位，保留足够的子弹'
+          ]
+        },
+        neutral: {
+          title: '中性市场',
+          subtitle: '保持平衡策略',
+          description: '市场情绪相对平衡，没有明显的恐慌或贪婪倾向。建议保持均衡配置。',
+          recommendations: [
+            '保持股债平衡的配置比例',
+            '坚持定投策略，不改变原有计划',
+            '关注基本面，选择优质标的',
+            '避免追涨杀跌，保持理性',
+            '可以考虑适当配置防御性板块'
+          ]
+        },
+        greed: {
+          title: '贪婪市场',
+          subtitle: '注意风险控制',
+          description: '市场情绪偏向贪婪，资产价格可能已被高估。建议提高警惕，不要追高。',
+          recommendations: [
+            '考虑逐步减仓锁定部分利润',
+            '提高现金或债券的配置比例',
+            '停止追涨，避免盲目加仓',
+            '设置止损位保护已有收益',
+            '开始为下一轮调整做准备'
+          ]
+        },
+        extreme_greed: {
+          title: '极度贪婪市场',
+          subtitle: '高风险警告',
+          description: '市场处于极度贪婪状态，往往预示着回调风险。历史上这是卖出的好时机，而非买入。',
+          recommendations: [
+            '强烈建议逐步减仓特别是高估值品种',
+            '将部分利润转入安全资产（债券、现金）',
+            '不要追高，避免FOMO心理',
+            '做好资产配置再平衡',
+            '警惕市场可能的大幅回调风险'
+          ]
+        }
+      };
+      
+      return adviceData[level.level] || adviceData.neutral;
+    }
+
+    // 更新UI
+    function updateUI(data) {
+      const value = data.value;
+      const levelInfo = getLevelInfo(value);
+      const advice = getAdvice(value);
+      
+      // 更新仪表盘
+      const rotation = (value / 100) * 180;
+      gaugeFill.style.background = `conic-gradient(
+        from 180deg at 50% 100%,
+        ${levelInfo.color} 0deg,
+        ${levelInfo.color} ${rotation}deg,
+        transparent ${rotation}deg
+      )`;
+      
+      gaugeValue.textContent = value;
+      gaugeValue.style.color = levelInfo.color;
+      
+      gaugeLabel.textContent = levelInfo.label;
+      gaugeLabel.style.background = `${levelInfo.color}22`;
+      gaugeLabel.style.color = levelInfo.color;
+      
+      // 更新时间
+      const timestamp = new Date(data.timestamp * 1000);
+      updateTime.textContent = timestamp.toLocaleString('zh-CN');
+      
+      // 更新情绪
+      sentiment.textContent = levelInfo.sentimentText;
+      sentiment.style.color = levelInfo.color;
+      
+      // 更新建议面板
+      advicePanel.style.borderColor = `${levelInfo.color}44`;
+      adviceIcon.textContent = levelInfo.icon;
+      adviceIcon.style.background = `${levelInfo.color}22`;
+      adviceIcon.style.color = levelInfo.color;
+      
+      adviceTitle.textContent = advice.title;
+      adviceTitle.style.color = levelInfo.color;
+      adviceSubtitle.textContent = advice.subtitle;
+      adviceDescription.textContent = advice.description;
+      
+      // 更新建议列表
+      adviceList.innerHTML = advice.recommendations
+        .map(rec => `<li style="color: var(--text-secondary)">${rec}</li>`)
+        .join('');
+      
+      // 隐藏错误
+      errorMessage.style.display = 'none';
+    }
+
+    // 获取数据
+    async function fetchData(showLoading = false) {
+      if (showLoading) {
+        loadingOverlay.classList.add('active');
+      }
+      refreshBtn.classList.add('loading');
+      
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error('网络请求失败');
+        }
+        
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          updateUI(data.data[0]);
+        } else {
+          throw new Error('数据格式错误');
+        }
+        
+        errorMessage.style.display = 'none';
+      } catch (error) {
+        console.error('获取数据失败:', error);
+        errorMessage.style.display = 'block';
+        document.getElementById('errorText').textContent = 
+          `加载失败: ${error.message}，请稍后重试`;
+      } finally {
+        refreshBtn.classList.remove('loading');
+        loadingOverlay.classList.remove('active');
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchData(true);
+      
+      // 设置自动刷新
+      setInterval(() => {
+        fetchData(false);
+      }, REFRESH_INTERVAL);
+    });
+  </script>
+</body>
+</html>
