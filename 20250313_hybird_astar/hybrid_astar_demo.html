@@ -279,9 +279,12 @@
                             <li><strong>LSR:</strong> 左转 - 直行 - 右转</li>
                             <li><strong>RSL:</strong> 右转 - 直行 - 左转</li>
                             <li><strong>RSR:</strong> 右转 - 直行 - 右转</li>
-                            <li><strong>LRL:</strong> 左转 - 右转 - 左转</li>
-                            <li><strong>RLR:</strong> 右转 - 左转 - 右转</li>
+                            <li><strong>LRL:</strong> 左转 - 右转 - 左转 (三圆弧类型)</li>
+                            <li><strong>RLR:</strong> 右转 - 左转 - 右转 (三圆弧类型)</li>
                         </ul>
+                        <p style="margin-top: 10px; color: #666;">
+                            💡 前4种为两段圆弧+直线型，后2种为三段圆弧型（无直线段）
+                        </p>
                     </div>
 
                     <div class="formula">
@@ -303,6 +306,18 @@
                     <div class="canvas-wrapper">
                         <h3>Dubins曲线 - LSR类型</h3>
                         <canvas id="dubinsLSR" width="350" height="300"></canvas>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <h3>Dubins曲线 - RSL类型</h3>
+                        <canvas id="dubinsRSL" width="350" height="300"></canvas>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <h3>Dubins曲线 - LRL类型</h3>
+                        <canvas id="dubinsLRL" width="350" height="300"></canvas>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <h3>Dubins曲线 - RLR类型</h3>
+                        <canvas id="dubinsRLR" width="350" height="300"></canvas>
                     </div>
                 </div>
                 <div class="controls" style="margin-top: 30px;">
@@ -839,25 +854,34 @@
         const dubinsCanvases = {
             LSL: document.getElementById('dubinsLSL'),
             RSR: document.getElementById('dubinsRSR'),
-            LSR: document.getElementById('dubinsLSR')
+            LSR: document.getElementById('dubinsLSR'),
+            RSL: document.getElementById('dubinsRSL'),
+            LRL: document.getElementById('dubinsLRL'),
+            RLR: document.getElementById('dubinsRLR')
         };
         
         const dubinsCtxs = {
             LSL: dubinsCanvases.LSL.getContext('2d'),
             RSR: dubinsCanvases.RSR.getContext('2d'),
-            LSR: dubinsCanvases.LSR.getContext('2d')
+            LSR: dubinsCanvases.LSR.getContext('2d'),
+            RSL: dubinsCanvases.RSL.getContext('2d'),
+            LRL: dubinsCanvases.LRL.getContext('2d'),
+            RLR: dubinsCanvases.RLR.getContext('2d')
         };
         
         let dubinsAnimationProgress = 0;
         let isDubinsAnimating = false;
         
         const dubinsPaths = {
-            LSL: {start: {x: 50, y: 200, angle: 0}, end: {x: 300, y: 100, angle: -Math.PI/2}},
-            RSR: {start: {x: 50, y: 150, angle: 0}, end: {x: 300, y: 200, angle: 0}},
-            LSR: {start: {x: 50, y: 150, angle: 0}, end: {x: 300, y: 200, angle: Math.PI/2}}
+            LSL: {start: {x: 50, y: 200, angle: 0}, end: {x: 280, y: 100, angle: -Math.PI/2}},
+            RSR: {start: {x: 50, y: 180, angle: 0}, end: {x: 280, y: 220, angle: 0}},
+            LSR: {start: {x: 50, y: 200, angle: 0}, end: {x: 280, y: 80, angle: Math.PI/2}},
+            RSL: {start: {x: 50, y: 100, angle: 0}, end: {x: 280, y: 200, angle: -Math.PI/2}},
+            LRL: {start: {x: 50, y: 150, angle: 0}, end: {x: 280, y: 150, angle: Math.PI}},
+            RLR: {start: {x: 50, y: 150, angle: 0}, end: {x: 280, y: 150, angle: Math.PI}}
         };
         
-        const TURN_RADIUS = 40;
+        const TURN_RADIUS = 50;
         
         function drawDubinsGrid(ctx, canvas) {
             ctx.fillStyle = '#f8f9fa';
@@ -924,32 +948,37 @@
                 x: start.x + TURN_RADIUS * Math.cos(start.angle + Math.PI/2),
                 y: start.y + TURN_RADIUS * Math.sin(start.angle + Math.PI/2)
             };
-            
+
             const left2 = {
                 x: end.x + TURN_RADIUS * Math.cos(end.angle + Math.PI/2),
                 y: end.y + TURN_RADIUS * Math.sin(end.angle + Math.PI/2)
             };
-            
+
+            // 缩短直线,增加圆弧角度
+            const arc1Angle = 0.9;
+            const arc2Angle = 0.9;
+
             const arc1Start = start.angle - Math.PI/2;
-            const arc1End = arc1Start + progress * 0.8;
-            
+            const arc1End = arc1Start + Math.min(progress, 0.45) * arc1Angle / 0.45;
+
             const midPoint1 = {
                 x: left1.x + TURN_RADIUS * Math.cos(arc1End),
                 y: left1.y + TURN_RADIUS * Math.sin(arc1End)
             };
-            
+
             const midPoint2 = {
-                x: left2.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2 + 0.2),
-                y: left2.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2 + 0.2)
+                x: left2.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2 - arc2Angle),
+                y: left2.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2 - arc2Angle)
             };
-            
-            const lineProgress = Math.max(0, progress - 0.4) / 0.3;
+
+            // 直线段占总进度的10%
+            const lineProgress = Math.max(0, (progress - 0.45) / 0.1);
             const lineEnd = {
                 x: midPoint1.x + (midPoint2.x - midPoint1.x) * Math.min(1, lineProgress),
                 y: midPoint1.y + (midPoint2.y - midPoint1.y) * Math.min(1, lineProgress)
             };
-            
-            return {left1, left2, arc1Start, arc1End, midPoint1, midPoint2, lineEnd};
+
+            return {left1, left2, arc1Start, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle};
         }
         
         function computeDubinsRSR(start, end, progress) {
@@ -957,31 +986,36 @@
                 x: start.x + TURN_RADIUS * Math.cos(start.angle - Math.PI/2),
                 y: start.y + TURN_RADIUS * Math.sin(start.angle - Math.PI/2)
             };
-            
+
             const right2 = {
                 x: end.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2),
                 y: end.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2)
             };
-            
-            const arc1End = start.angle + Math.PI/2 + progress * 0.5;
-            
+
+            // 缩短直线,增加圆弧角度
+            const arc1Angle = 0.9;
+            const arc2Angle = 0.9;
+
+            const arc1End = start.angle + Math.PI/2 + Math.min(progress, 0.45) * arc1Angle / 0.45;
+
             const midPoint1 = {
                 x: right1.x + TURN_RADIUS * Math.cos(arc1End),
                 y: right1.y + TURN_RADIUS * Math.sin(arc1End)
             };
-            
+
             const midPoint2 = {
-                x: right2.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2 + 0.3),
-                y: right2.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2 + 0.3)
+                x: right2.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2 - arc2Angle),
+                y: right2.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2 - arc2Angle)
             };
-            
-            const lineProgress = Math.max(0, progress - 0.25) / 0.5;
+
+            // 直线段占总进度的10%
+            const lineProgress = Math.max(0, (progress - 0.45) / 0.1);
             const lineEnd = {
                 x: midPoint1.x + (midPoint2.x - midPoint1.x) * Math.min(1, lineProgress),
                 y: midPoint1.y + (midPoint2.y - midPoint1.y) * Math.min(1, lineProgress)
             };
-            
-            return {right1, right2, arc1End, midPoint1, midPoint2, lineEnd};
+
+            return {right1, right2, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle};
         }
         
         function computeDubinsLSR(start, end, progress) {
@@ -989,59 +1023,191 @@
                 x: start.x + TURN_RADIUS * Math.cos(start.angle + Math.PI/2),
                 y: start.y + TURN_RADIUS * Math.sin(start.angle + Math.PI/2)
             };
-            
+
             const right2 = {
                 x: end.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2),
                 y: end.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2)
             };
-            
-            const arc1End = start.angle - Math.PI/2 + progress * 0.6;
-            
+
+            // 缩短直线,增加圆弧角度
+            const arc1Angle = 0.9;
+            const arc2Angle = 0.9;
+
+            const arc1End = start.angle - Math.PI/2 + Math.min(progress, 0.45) * arc1Angle / 0.45;
+
             const midPoint1 = {
                 x: left1.x + TURN_RADIUS * Math.cos(arc1End),
                 y: left1.y + TURN_RADIUS * Math.sin(arc1End)
             };
-            
+
             const midPoint2 = {
-                x: right2.x + TURN_RADIUS * Math.cos(end.angle + Math.PI/2 - 0.4),
-                y: right2.y + TURN_RADIUS * Math.sin(end.angle + Math.PI/2 - 0.4)
+                x: right2.x + TURN_RADIUS * Math.cos(end.angle + Math.PI/2 - arc2Angle),
+                y: right2.y + TURN_RADIUS * Math.sin(end.angle + Math.PI/2 - arc2Angle)
             };
-            
-            const lineProgress = Math.max(0, progress - 0.3) / 0.4;
+
+            // 直线段占总进度的10%
+            const lineProgress = Math.max(0, (progress - 0.45) / 0.1);
             const lineEnd = {
                 x: midPoint1.x + (midPoint2.x - midPoint1.x) * Math.min(1, lineProgress),
                 y: midPoint1.y + (midPoint2.y - midPoint1.y) * Math.min(1, lineProgress)
             };
-            
-            return {left1, right2, arc1End, midPoint1, midPoint2, lineEnd};
+
+            return {left1, right2, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle};
+        }
+        
+        function computeDubinsRSL(start, end, progress) {
+            const right1 = {
+                x: start.x + TURN_RADIUS * Math.cos(start.angle - Math.PI/2),
+                y: start.y + TURN_RADIUS * Math.sin(start.angle - Math.PI/2)
+            };
+
+            const left2 = {
+                x: end.x + TURN_RADIUS * Math.cos(end.angle + Math.PI/2),
+                y: end.y + TURN_RADIUS * Math.sin(end.angle + Math.PI/2)
+            };
+
+            // 缩短直线,增加圆弧角度
+            const arc1Angle = 0.9;
+            const arc2Angle = 0.9;
+
+            const arc1End = start.angle + Math.PI/2 + Math.min(progress, 0.45) * arc1Angle / 0.45;
+
+            const midPoint1 = {
+                x: right1.x + TURN_RADIUS * Math.cos(arc1End),
+                y: right1.y + TURN_RADIUS * Math.sin(arc1End)
+            };
+
+            const midPoint2 = {
+                x: left2.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2 + arc2Angle),
+                y: left2.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2 + arc2Angle)
+            };
+
+            // 直线段占总进度的10%
+            const lineProgress = Math.max(0, (progress - 0.45) / 0.1);
+            const lineEnd = {
+                x: midPoint1.x + (midPoint2.x - midPoint1.x) * Math.min(1, lineProgress),
+                y: midPoint1.y + (midPoint2.y - midPoint1.y) * Math.min(1, lineProgress)
+            };
+
+            return {right1, left2, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle};
+        }
+        
+        function computeDubinsLRL(start, end, progress) {
+            const left1 = {
+                x: start.x + TURN_RADIUS * Math.cos(start.angle + Math.PI/2),
+                y: start.y + TURN_RADIUS * Math.sin(start.angle + Math.PI/2)
+            };
+
+            const midCircle = {
+                x: (start.x + end.x) / 2,
+                y: (start.y + end.y) / 2
+            };
+
+            const left3 = {
+                x: end.x + TURN_RADIUS * Math.cos(end.angle + Math.PI/2),
+                y: end.y + TURN_RADIUS * Math.sin(end.angle + Math.PI/2)
+            };
+
+            const arc1Angle = 0.6;
+            const arc2Angle = 0.6;
+            const arc3Angle = 0.6;
+
+            const arc1Start = start.angle - Math.PI/2;
+            const arc1End = arc1Start + Math.min(progress, 0.33) * arc1Angle / 0.33;
+
+            const midPoint1 = {
+                x: left1.x + TURN_RADIUS * Math.cos(arc1End),
+                y: left1.y + TURN_RADIUS * Math.sin(arc1End)
+            };
+
+            const arc2Start = arc1End;
+            const arc2End = arc2Start + Math.max(0, Math.min((progress - 0.33), 0.34)) * arc2Angle / 0.34;
+
+            const midPoint2 = {
+                x: midCircle.x + TURN_RADIUS * Math.cos(arc2End),
+                y: midCircle.y + TURN_RADIUS * Math.sin(arc2End)
+            };
+
+            const arc3Start = end.angle - Math.PI/2 - arc3Angle;
+            const arc3Progress = Math.max(0, progress - 0.67) / 0.33;
+            const arc3End = arc3Start + Math.min(arc3Progress, 1) * arc3Angle;
+
+            return {left1, midCircle, left3, arc1Start, arc1End, arc2Start, arc2End, arc3Start, arc3End, midPoint1, midPoint2};
+        }
+        
+        function computeDubinsRLR(start, end, progress) {
+            const right1 = {
+                x: start.x + TURN_RADIUS * Math.cos(start.angle - Math.PI/2),
+                y: start.y + TURN_RADIUS * Math.sin(start.angle - Math.PI/2)
+            };
+
+            const midCircle = {
+                x: (start.x + end.x) / 2,
+                y: (start.y + end.y) / 2
+            };
+
+            const right3 = {
+                x: end.x + TURN_RADIUS * Math.cos(end.angle - Math.PI/2),
+                y: end.y + TURN_RADIUS * Math.sin(end.angle - Math.PI/2)
+            };
+
+            const arc1Angle = 0.6;
+            const arc2Angle = 0.6;
+            const arc3Angle = 0.6;
+
+            const arc1End = start.angle + Math.PI/2 + Math.min(progress, 0.33) * arc1Angle / 0.33;
+
+            const midPoint1 = {
+                x: right1.x + TURN_RADIUS * Math.cos(arc1End),
+                y: right1.y + TURN_RADIUS * Math.sin(arc1End)
+            };
+
+            const arc2Start = arc1End;
+            const arc2End = arc2Start - Math.max(0, Math.min((progress - 0.33), 0.34)) * arc2Angle / 0.34;
+
+            const midPoint2 = {
+                x: midCircle.x + TURN_RADIUS * Math.cos(arc2End),
+                y: midCircle.y + TURN_RADIUS * Math.sin(arc2End)
+            };
+
+            const arc3Start = end.angle - Math.PI/2 - arc3Angle;
+            const arc3Progress = Math.max(0, progress - 0.67) / 0.33;
+            const arc3End = arc3Start - Math.min(arc3Progress, 1) * arc3Angle;
+
+            return {right1, midCircle, right3, arc1End, arc2Start, arc2End, arc3Start, arc3End, midPoint1, midPoint2};
         }
         
         function renderDubinsLSL(progress) {
             const ctx = dubinsCtxs.LSL;
             const canvas = dubinsCanvases.LSL;
             const {start, end} = dubinsPaths.LSL;
-            
+
             drawDubinsGrid(ctx, canvas);
-            
-            const {left1, left2, arc1Start, arc1End, midPoint1, midPoint2, lineEnd} = computeDubinsLSL(start, end, progress);
-            
+
+            const {left1, left2, arc1Start, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle} = computeDubinsLSL(start, end, progress);
+
+            const arc1ActualEnd = Math.min(arc1End, arc1Start + arc1Angle);
+
             // 绘制第一个圆弧（左转）
-            drawArc(ctx, left1, arc1Start, Math.min(arc1End, arc1Start + 0.8), TURN_RADIUS, '#3498db', 4);
-            
+            drawArc(ctx, left1, arc1Start, arc1ActualEnd, TURN_RADIUS, '#3498db', 4);
+
             // 绘制直线段
-            if (progress > 0.4) {
-                drawLine(ctx, {x: left1.x + TURN_RADIUS * Math.cos(arc1Start + 0.8), 
-                               y: left1.y + TURN_RADIUS * Math.sin(arc1Start + 0.8)}, 
-                        lineEnd, '#9b59b6', 4);
+            if (progress > 0.45) {
+                const lineStart = {
+                    x: left1.x + TURN_RADIUS * Math.cos(arc1ActualEnd),
+                    y: left1.y + TURN_RADIUS * Math.sin(arc1ActualEnd)
+                };
+                drawLine(ctx, lineStart, lineEnd, '#9b59b6', 4);
             }
-            
+
             // 绘制第二个圆弧（左转）
-            if (progress > 0.7) {
-                const arc2Progress = (progress - 0.7) / 0.3;
-                drawArc(ctx, left2, end.angle - Math.PI/2 - 0.2, 
-                       end.angle - Math.PI/2 - 0.2 + arc2Progress * 0.2, TURN_RADIUS, '#3498db', 4);
+            if (progress > 0.55) {
+                const arc2Progress = (progress - 0.55) / 0.45;
+                const arc2Start = end.angle - Math.PI/2 - arc2Angle;
+                const arc2ActualEnd = arc2Start + arc2Progress * arc2Angle;
+                drawArc(ctx, left2, arc2Start, arc2ActualEnd, TURN_RADIUS, '#3498db', 4);
             }
-            
+
             drawPoint(ctx, start, '#2ecc71', 'S');
             drawPoint(ctx, end, '#e74c3c', 'E');
         }
@@ -1050,28 +1216,33 @@
             const ctx = dubinsCtxs.RSR;
             const canvas = dubinsCanvases.RSR;
             const {start, end} = dubinsPaths.RSR;
-            
+
             drawDubinsGrid(ctx, canvas);
-            
-            const {right1, right2, arc1End, midPoint1, midPoint2, lineEnd} = computeDubinsRSR(start, end, progress);
-            
+
+            const {right1, right2, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle} = computeDubinsRSR(start, end, progress);
+
+            const arc1ActualEnd = Math.min(arc1End, start.angle + Math.PI/2 + arc1Angle);
+
             // 绘制第一个圆弧（右转）
-            drawArc(ctx, right1, start.angle + Math.PI/2, Math.min(arc1End, start.angle + Math.PI/2 + 0.5), TURN_RADIUS, '#f39c12', 4);
-            
+            drawArc(ctx, right1, start.angle + Math.PI/2, arc1ActualEnd, TURN_RADIUS, '#f39c12', 4);
+
             // 绘制直线段
-            if (progress > 0.25) {
-                drawLine(ctx, {x: right1.x + TURN_RADIUS * Math.cos(start.angle + Math.PI/2 + 0.5), 
-                               y: right1.y + TURN_RADIUS * Math.sin(start.angle + Math.PI/2 + 0.5)}, 
-                        lineEnd, '#9b59b6', 4);
+            if (progress > 0.45) {
+                const lineStart = {
+                    x: right1.x + TURN_RADIUS * Math.cos(arc1ActualEnd),
+                    y: right1.y + TURN_RADIUS * Math.sin(arc1ActualEnd)
+                };
+                drawLine(ctx, lineStart, lineEnd, '#9b59b6', 4);
             }
-            
+
             // 绘制第二个圆弧（右转）
-            if (progress > 0.75) {
-                const arc2Progress = (progress - 0.75) / 0.25;
-                drawArc(ctx, right2, end.angle - Math.PI/2 - 0.3, 
-                       end.angle - Math.PI/2 - 0.3 + arc2Progress * 0.3, TURN_RADIUS, '#f39c12', 4);
+            if (progress > 0.55) {
+                const arc2Progress = (progress - 0.55) / 0.45;
+                const arc2Start = end.angle - Math.PI/2 - arc2Angle;
+                const arc2ActualEnd = arc2Start + arc2Progress * arc2Angle;
+                drawArc(ctx, right2, arc2Start, arc2ActualEnd, TURN_RADIUS, '#f39c12', 4);
             }
-            
+
             drawPoint(ctx, start, '#2ecc71', 'S');
             drawPoint(ctx, end, '#e74c3c', 'E');
         }
@@ -1080,28 +1251,128 @@
             const ctx = dubinsCtxs.LSR;
             const canvas = dubinsCanvases.LSR;
             const {start, end} = dubinsPaths.LSR;
-            
+
             drawDubinsGrid(ctx, canvas);
-            
-            const {left1, right2, arc1End, midPoint1, midPoint2, lineEnd} = computeDubinsLSR(start, end, progress);
-            
+
+            const {left1, right2, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle} = computeDubinsLSR(start, end, progress);
+
+            const arc1ActualEnd = Math.min(arc1End, start.angle - Math.PI/2 + arc1Angle);
+
             // 绘制第一个圆弧（左转）
-            drawArc(ctx, left1, start.angle - Math.PI/2, Math.min(arc1End, start.angle - Math.PI/2 + 0.6), TURN_RADIUS, '#3498db', 4);
-            
+            drawArc(ctx, left1, start.angle - Math.PI/2, arc1ActualEnd, TURN_RADIUS, '#3498db', 4);
+
             // 绘制直线段
-            if (progress > 0.3) {
-                drawLine(ctx, {x: left1.x + TURN_RADIUS * Math.cos(start.angle - Math.PI/2 + 0.6), 
-                               y: left1.y + TURN_RADIUS * Math.sin(start.angle - Math.PI/2 + 0.6)}, 
-                        lineEnd, '#9b59b6', 4);
+            if (progress > 0.45) {
+                const lineStart = {
+                    x: left1.x + TURN_RADIUS * Math.cos(arc1ActualEnd),
+                    y: left1.y + TURN_RADIUS * Math.sin(arc1ActualEnd)
+                };
+                drawLine(ctx, lineStart, lineEnd, '#9b59b6', 4);
             }
-            
+
             // 绘制第二个圆弧（右转）
-            if (progress > 0.7) {
-                const arc2Progress = (progress - 0.7) / 0.3;
-                drawArc(ctx, right2, end.angle + Math.PI/2 - 0.4, 
-                       end.angle + Math.PI/2 - 0.4 - arc2Progress * 0.4, TURN_RADIUS, '#f39c12', 4);
+            if (progress > 0.55) {
+                const arc2Progress = (progress - 0.55) / 0.45;
+                const arc2Start = end.angle + Math.PI/2 - arc2Angle;
+                const arc2ActualEnd = arc2Start - arc2Progress * arc2Angle;
+                drawArc(ctx, right2, arc2Start, arc2ActualEnd, TURN_RADIUS, '#f39c12', 4);
             }
-            
+
+            drawPoint(ctx, start, '#2ecc71', 'S');
+            drawPoint(ctx, end, '#e74c3c', 'E');
+        }
+        
+        function renderDubinsRSL(progress) {
+            const ctx = dubinsCtxs.RSL;
+            const canvas = dubinsCanvases.RSL;
+            const {start, end} = dubinsPaths.RSL;
+
+            drawDubinsGrid(ctx, canvas);
+
+            const {right1, left2, arc1End, midPoint1, midPoint2, lineEnd, arc1Angle, arc2Angle} = computeDubinsRSL(start, end, progress);
+
+            const arc1ActualEnd = Math.min(arc1End, start.angle + Math.PI/2 + arc1Angle);
+
+            // 绘制第一个圆弧（右转）
+            drawArc(ctx, right1, start.angle + Math.PI/2, arc1ActualEnd, TURN_RADIUS, '#f39c12', 4);
+
+            // 绘制直线段
+            if (progress > 0.45) {
+                const lineStart = {
+                    x: right1.x + TURN_RADIUS * Math.cos(arc1ActualEnd),
+                    y: right1.y + TURN_RADIUS * Math.sin(arc1ActualEnd)
+                };
+                drawLine(ctx, lineStart, lineEnd, '#9b59b6', 4);
+            }
+
+            // 绘制第二个圆弧（左转）
+            if (progress > 0.55) {
+                const arc2Progress = (progress - 0.55) / 0.45;
+                const arc2Start = end.angle - Math.PI/2 + arc2Angle;
+                const arc2ActualEnd = arc2Start + arc2Progress * arc2Angle;
+                drawArc(ctx, left2, arc2Start, arc2ActualEnd, TURN_RADIUS, '#3498db', 4);
+            }
+
+            drawPoint(ctx, start, '#2ecc71', 'S');
+            drawPoint(ctx, end, '#e74c3c', 'E');
+        }
+        
+        function renderDubinsLRL(progress) {
+            const ctx = dubinsCtxs.LRL;
+            const canvas = dubinsCanvases.LRL;
+            const {start, end} = dubinsPaths.LRL;
+
+            drawDubinsGrid(ctx, canvas);
+
+            const {left1, midCircle, left3, arc1Start, arc1End, arc2Start, arc2End, arc3Start, arc3End, midPoint1, midPoint2} = computeDubinsLRL(start, end, progress);
+
+            // 绘制第一个圆弧（左转）
+            const arc1ActualEnd = Math.min(arc1End, arc1Start + 0.6);
+            drawArc(ctx, left1, arc1Start, arc1ActualEnd, TURN_RADIUS, '#3498db', 4);
+
+            // 绘制第二个圆弧（右转）
+            if (progress > 0.33) {
+                const arc2ActualEnd = Math.max(Math.min(arc2End, arc2Start + 0.6), arc2Start);
+                drawArc(ctx, midCircle, arc2Start, arc2ActualEnd, TURN_RADIUS, '#f39c12', 4);
+            }
+
+            // 绘制第三个圆弧（左转）
+            if (progress > 0.67) {
+                const arc3Progress = (progress - 0.67) / 0.33;
+                const arc3ActualEnd = arc3Start + Math.min(arc3Progress, 1) * 0.6;
+                drawArc(ctx, left3, arc3Start, arc3ActualEnd, TURN_RADIUS, '#3498db', 4);
+            }
+
+            drawPoint(ctx, start, '#2ecc71', 'S');
+            drawPoint(ctx, end, '#e74c3c', 'E');
+        }
+        
+        function renderDubinsRLR(progress) {
+            const ctx = dubinsCtxs.RLR;
+            const canvas = dubinsCanvases.RLR;
+            const {start, end} = dubinsPaths.RLR;
+
+            drawDubinsGrid(ctx, canvas);
+
+            const {right1, midCircle, right3, arc1End, arc2Start, arc2End, arc3Start, arc3End, midPoint1, midPoint2} = computeDubinsRLR(start, end, progress);
+
+            // 绘制第一个圆弧（右转）
+            const arc1ActualEnd = Math.min(arc1End, start.angle + Math.PI/2 + 0.6);
+            drawArc(ctx, right1, start.angle + Math.PI/2, arc1ActualEnd, TURN_RADIUS, '#f39c12', 4);
+
+            // 绘制第二个圆弧（左转）
+            if (progress > 0.33) {
+                const arc2ActualEnd = Math.max(Math.min(arc2End, arc2Start), arc2Start - 0.6);
+                drawArc(ctx, midCircle, arc2Start, arc2ActualEnd, TURN_RADIUS, '#3498db', 4);
+            }
+
+            // 绘制第三个圆弧（右转）
+            if (progress > 0.67) {
+                const arc3Progress = (progress - 0.67) / 0.33;
+                const arc3ActualEnd = arc3Start - Math.min(arc3Progress, 1) * 0.6;
+                drawArc(ctx, right3, arc3Start, arc3ActualEnd, TURN_RADIUS, '#f39c12', 4);
+            }
+
             drawPoint(ctx, start, '#2ecc71', 'S');
             drawPoint(ctx, end, '#e74c3c', 'E');
         }
@@ -1118,6 +1389,9 @@
                 renderDubinsLSL(dubinsAnimationProgress);
                 renderDubinsRSR(dubinsAnimationProgress);
                 renderDubinsLSR(dubinsAnimationProgress);
+                renderDubinsRSL(dubinsAnimationProgress);
+                renderDubinsLRL(dubinsAnimationProgress);
+                renderDubinsRLR(dubinsAnimationProgress);
                 
                 if (dubinsAnimationProgress < 1 && isDubinsAnimating) {
                     requestAnimationFrame(animate);
@@ -1136,6 +1410,9 @@
             renderDubinsLSL(1);
             renderDubinsRSR(1);
             renderDubinsLSR(1);
+            renderDubinsRSL(1);
+            renderDubinsLRL(1);
+            renderDubinsRLR(1);
         }
         
         // 初始化Dubins画布

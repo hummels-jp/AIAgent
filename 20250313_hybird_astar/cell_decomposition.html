@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拓扑连通图构建方法 - 单元分解法</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .description {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .description h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .description p {
+            margin-bottom: 15px;
+        }
+
+        .description ul {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .description li {
+            margin-bottom: 8px;
+        }
+
+        .formula {
+            background: #fff;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .canvas-wrapper h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        canvas {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            margin: 0 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #667eea;
+        }
+
+        .info-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .step {
+            background: #e0e0e0;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .step.completed {
+            background: #2ecc71;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animating {
+            animation: pulse 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>拓扑连通图构建方法</h1>
+            <p>单元分解法 (Cell Decomposition) 详细说明与交互式演示</p>
+        </div>
+
+        <div class="content">
+            <!-- 基本概念部分 -->
+            <div class="section">
+                <h2 class="section-title">基本概念</h2>
+                <div class="description">
+                    <h3>什么是单元分解法?</h3>
+                    <p><strong>单元分解法</strong>是一种将自由空间分解为一系列简单几何单元的方法，这些单元连接形成拓扑连通图，用于路径规划。</p>
+                    
+                    <h3>核心思想</h3>
+                    <ul>
+                        <li><strong>分解:</strong> 将复杂的自由空间分解为简单的、规则的单元（如三角形、矩形、梯形等）</li>
+                        <li><strong>连通性分析:</strong> 确定相邻单元之间的连接关系</li>
+                        <li><strong>图构建:</strong> 将单元表示为图的节点，相邻关系表示为边</li>
+                        <li><strong>路径搜索:</strong> 在连通图上使用图搜索算法（如A*、Dijkstra）找到最优路径</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 单元分解类型 -->
+            <div class="section">
+                <h2 class="section-title">单元分解类型</h2>
+                <div class="description">
+                    <table>
+                        <tr>
+                            <th style="width: 20%;">类型</th>
+                            <th style="width: 40%;">特点</th>
+                            <th style="width: 40%;">优缺点</th>
+                        </tr>
+                        <tr>
+                            <td><strong>精确分解</strong><br>(Exact)</td>
+                            <td>完全覆盖自由空间，无重叠和间隙</td>
+                            <td>
+                                <strong>优点:</strong> 完全准确<br>
+                                <strong>缺点:</strong> 计算复杂度高，单元形状不规则
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>近似分解</strong><br>(Approximate)</td>
+                            <td>使用固定形状（如矩形）覆盖空间</td>
+                            <td>
+                                <strong>优点:</strong> 计算简单，实现容易<br>
+                                <strong>缺点:</strong> 不完全准确，可能遗漏自由空间
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>梯形分解</strong><br>(Trapezoidal)</td>
+                            <td>使用梯形单元，适合多边形环境</td>
+                            <td>
+                                <strong>优点:</strong> 单元数量较少<br>
+                                <strong>缺点:</strong> 只适用于多边形障碍物
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>网格分解</strong><br>(Grid)</td>
+                            <td>将空间划分为规则网格</td>
+                            <td>
+                                <strong>优点:</strong> 最简单，内存效率高<br>
+                                <strong>缺点:</strong> 精度受网格大小限制
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 算法流程 -->
+            <div class="section">
+                <h2 class="section-title">算法流程</h2>
+                <div class="description">
+                    <div class="info-box">
+                        <h4>单元分解法的完整流程：</h4>
+                    </div>
+                    
+                    <h3>步骤1: 环境建模</h3>
+                    <ul>
+                        <li>定义工作空间的边界</li>
+                        <li>识别和表示所有障碍物</li>
+                        <li>确定自由空间（无障碍区域）</li>
+                    </ul>
+
+                    <h3>步骤2: 单元分解</h3>
+                    <ul>
+                        <li>选择分解策略（精确/近似/网格）</li>
+                        <li>将自由空间分解为简单单元</li>
+                        <li>确保单元之间无重叠且完全覆盖</li>
+                    </ul>
+
+                    <h3>步骤3: 连通性分析</h3>
+                    <ul>
+                        <li>确定每个单元的邻居</li>
+                        <li>检查相邻单元之间的连通性</li>
+                        <li>记录可通行的相邻关系</li>
+                    </ul>
+
+                    <h3>步骤4: 拓扑连通图构建</h3>
+                    <ul>
+                        <li>每个单元对应图中的一个节点</li>
+                        <li>相邻关系对应图中的边</li>
+                        <li>边的权重可以是距离、成本等</li>
+                    </ul>
+
+                    <h3>步骤5: 路径搜索</h3>
+                    <ul>
+                        <li>在连通图上运行图搜索算法</li>
+                        <li>找到从起点到终点的最优路径</li>
+                        <li>将图中的路径转换回连续空间的路径</li>
+                    </ul>
+
+                    <div class="formula">
+                        <strong>拓扑连通图表示：</strong><br>
+                        G = (V, E)<br>
+                        其中：<br>
+                        - V = {v₁, v₂, ..., vₙ} 是单元节点的集合<br>
+                        - E = {e₁, e₂, ..., eₘ} 是相邻边的集合<br>
+                        - eᵢ = (vⱼ, vₖ) 表示单元vⱼ和vₖ相邻且可通行
+                    </div>
+                </div>
+            </div>
+
+            <!-- 交互演示部分 -->
+            <div class="section">
+                <h2 class="section-title">交互式演示</h2>
+                <div class="description">
+                    <p>以下演示展示了单元分解法的完整过程。您可以通过控制按钮逐步查看每个阶段的效果。</p>
+                </div>
+
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1. 原始环境</div>
+                    <div class="step" id="step2">2. 网格分解</div>
+                    <div class="step" id="step3">3. 单元识别</div>
+                    <div class="step" id="step4">4. 连通图</div>
+                    <div class="step" id="step5">5. 路径搜索</div>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="canvas-wrapper">
+                        <h3>单元分解演示</h3>
+                        <canvas id="decompositionCanvas" width="600" height="400"></canvas>
+                        <div class="controls" style="margin-top: 20px;">
+                            <button onclick="nextStep()">下一步</button>
+                            <button onclick="prevStep()">上一步</button>
+                            <button onclick="resetDemo()">重置</button>
+                            <button onclick="autoPlay()">自动播放</button>
+                        </div>
+                        <div class="legend" style="margin-top: 20px;">
+                            <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div><span>起点</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div><span>终点</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #9b59b6;"></div><span>障碍物</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div><span>自由单元</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #f39c12;"></div><span>选中路径</span></div>
+                            <div class="legend-item"><div class="legend-color" style="background: #95a5a6;"></div><span>连通边</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="description" style="margin-top: 30px;">
+                    <div class="info-box">
+                        <h4>当前步骤说明：</h4>
+                        <p id="stepDescription">显示原始环境，包含障碍物、起点和终点。点击"下一步"开始分解过程。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高级主题 -->
+            <div class="section">
+                <h2 class="section-title">高级主题</h2>
+                <div class="description">
+                    <h3>1. 分解策略选择</h3>
+                    <ul>
+                        <li><strong>网格大小权衡:</strong> 网格越小精度越高，但计算复杂度也越高</li>
+                        <li><strong>内存效率:</strong> 使用稀疏矩阵或压缩格式存储连通图</li>
+                        <li><strong>动态环境:</strong> 支持增量式更新，无需重新分解整个空间</li>
+                    </ul>
+
+                    <h3>2. 路径优化</h3>
+                    <ul>
+                        <li><strong>路径平滑:</strong> 使用样条插值或Bézier曲线平滑锯齿状路径</li>
+                        <li><strong>角点优化:</strong> 减少不必要的转弯，符合运动学约束</li>
+                        <li><strong>多目标优化:</strong> 同时优化路径长度、安全性和能耗</li>
+                    </ul>
+
+                    <h3>3. 实际应用</h3>
+                    <ul>
+                        <li><strong>室内导航:</strong> 家庭服务机器人、AGV仓储物流</li>
+                        <li><strong>自动驾驶:</strong> 城市道路网络、停车场规划</li>
+                        <li><strong>游戏AI:</strong> NPC寻路、关卡设计</li>
+                        <li><strong>无人机:</strong> 三维空间的航点规划</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 总结 -->
+            <div class="section">
+                <h2 class="section-title">总结</h2>
+                <div class="description">
+                    <div class="info-box">
+                        <h4>单元分解法的优缺点：</h4>
+                        <table>
+                            <tr>
+                                <th style="width: 50%;">优点</th>
+                                <th style="width: 50%;">缺点</th>
+                            </tr>
+                            <tr>
+                                <td>
+                                    ✅ 概念简单，易于理解和实现<br>
+                                    ✅ 适用于各种形状的障碍物<br>
+                                    ✅ 保证路径的存在性<br>
+                                    ✅ 可扩展到三维空间<br>
+                                    ✅ 支持动态环境更新
+                                </td>
+                                <td>
+                                    ❌ 离散化可能导致精度损失<br>
+                                    ❌ 路径可能不是最优的<br>
+                                    ❌ 内存消耗与分解精度成正比<br>
+                                    ❌ 计算复杂度随精度指数增长<br>
+                                    ❌ 生成的路径可能不平滑
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="formula">
+                        <strong>复杂度分析：</strong><br>
+                        - 时间复杂度：O(n²) 其中n是单元数量<br>
+                        - 空间复杂度：O(n) 存储连通图<br>
+                        - 图搜索：O(m + n log n) 使用A*算法，m是边数
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 画布设置
+        const canvas = document.getElementById('decompositionCanvas');
+        const ctx = canvas.getContext('2d');
+        const GRID_SIZE = 30;
+        const COLS = Math.floor(canvas.width / GRID_SIZE);
+        const ROWS = Math.floor(canvas.height / GRID_SIZE);
+
+        // 当前演示步骤
+        let currentStep = 1;
+        let isAnimating = false;
+
+        // 起点、终点、障碍物
+        const startPos = {x: 2, y: 2};
+        const endPos = {x: COLS - 3, y: ROWS - 3};
+        const obstacles = [
+            {x: 5, y: 3, width: 3, height: 8},
+            {x: 10, y: 5, width: 4, height: 6},
+            {x: 14, y: 2, width: 3, height: 5},
+            {x: 7, y: 10, width: 5, height: 3},
+            {x: 3, y: 8, width: 2, height: 4}
+        ];
+
+        // 单元和路径
+        let freeCells = [];
+        let adjacencyList = {};
+        let optimalPath = [];
+
+        // 步骤说明
+        const stepDescriptions = {
+            1: "显示原始环境，包含障碍物、起点和终点。点击'下一步'开始分解过程。",
+            2: "将工作空间划分为规则网格。每个网格单元是一个原子单元，用于后续分析。",
+            3: "识别所有自由单元（不包含障碍物）。这些单元构成了可行的导航空间。",
+            4: "构建拓扑连通图。相邻的自由单元之间存在连接边，形成图结构。",
+            5: "使用A*算法在连通图上搜索从起点到终点的最优路径。"
+        };
+
+        // 初始化
+        function init() {
+            computeFreeCells();
+            computeAdjacencyList();
+            findOptimalPath();
+            render();
+        }
+
+        // 计算自由单元
+        function computeFreeCells() {
+            freeCells = [];
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    if (!isObstacle(x, y)) {
+                        freeCells.push({x, y});
+                    }
+                }
+            }
+        }
+
+        // 检查是否是障碍物
+        function isObstacle(x, y) {
+            return obstacles.some(obs => 
+                x >= obs.x && x < obs.x + obs.width &&
+                y >= obs.y && y < obs.y + obs.height
+            );
+        }
+
+        // 计算邻接表
+        function computeAdjacencyList() {
+            adjacencyList = {};
+            freeCells.forEach(cell => {
+                const key = `${cell.x},${cell.y}`;
+                adjacencyList[key] = [];
+                
+                // 检查4个邻居（上下左右）
+                const neighbors = [
+                    {x: cell.x + 1, y: cell.y},
+                    {x: cell.x - 1, y: cell.y},
+                    {x: cell.x, y: cell.y + 1},
+                    {x: cell.x, y: cell.y - 1}
+                ];
+                
+                neighbors.forEach(neighbor => {
+                    if (neighbor.x >= 0 && neighbor.x < COLS &&
+                        neighbor.y >= 0 && neighbor.y < ROWS &&
+                        !isObstacle(neighbor.x, neighbor.y)) {
+                        adjacencyList[key].push(neighbor);
+                    }
+                });
+            });
+        }
+
+        // 使用A*算法寻找最优路径
+        function findOptimalPath() {
+            const startKey = `${startPos.x},${startPos.y}`;
+            const endKey = `${endPos.x},${endPos.y}`;
+            
+            const openSet = [{x: startPos.x, y: startPos.y, g: 0, f: heuristic(startPos, endPos)}];
+            const cameFrom = {};
+            const gScore = {};
+            
+            gScore[startKey] = 0;
+            
+            while (openSet.length > 0) {
+                openSet.sort((a, b) => a.f - b.f);
+                const current = openSet.shift();
+                const currentKey = `${current.x},${current.y}`;
+                
+                if (currentKey === endKey) {
+                    // 回溯路径
+                    optimalPath = [];
+                    let node = current;
+                    while (node) {
+                        optimalPath.unshift(node);
+                        const key = `${node.x},${node.y}`;
+                        node = cameFrom[key];
+                    }
+                    return;
+                }
+                
+                if (adjacencyList[currentKey]) {
+                    adjacencyList[currentKey].forEach(neighbor => {
+                        const neighborKey = `${neighbor.x},${neighbor.y}`;
+                        const tentativeG = gScore[currentKey] + 1;
+                        
+                        if (tentativeG < (gScore[neighborKey] || Infinity)) {
+                            cameFrom[neighborKey] = current;
+                            gScore[neighborKey] = tentativeG;
+                            const f = tentativeG + heuristic(neighbor, endPos);
+                            
+                            if (!openSet.some(n => n.x === neighbor.x && n.y === neighbor.y)) {
+                                openSet.push({x: neighbor.x, y: neighbor.y, g: tentativeG, f: f});
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // 启发式函数（曼哈顿距离）
+        function heuristic(a, b) {
+            return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        }
+
+        // 渲染函数
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格
+            drawGrid();
+            
+            // 根据步骤绘制不同内容
+            switch(currentStep) {
+                case 1:
+                    drawOriginalEnvironment();
+                    break;
+                case 2:
+                    drawGridDecomposition();
+                    break;
+                case 3:
+                    drawFreeCells();
+                    break;
+                case 4:
+                    drawFreeCells();
+                    drawConnectivityGraph();
+                    break;
+                case 5:
+                    drawFreeCells();
+                    drawConnectivityGraph();
+                    drawOptimalPath();
+                    break;
+            }
+        }
+
+        // 绘制网格
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+            
+            for (let i = 0; i <= COLS; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * GRID_SIZE, 0);
+                ctx.lineTo(i * GRID_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let j = 0; j <= ROWS; j++) {
+                ctx.beginPath();
+                ctx.moveTo(0, j * GRID_SIZE);
+                ctx.lineTo(canvas.width, j * GRID_SIZE);
+                ctx.stroke();
+            }
+        }
+
+        // 绘制原始环境
+        function drawOriginalEnvironment() {
+            // 绘制障碍物
+            ctx.fillStyle = '#9b59b6';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x * GRID_SIZE + 1, obs.y * GRID_SIZE + 1, 
+                              obs.width * GRID_SIZE - 2, obs.height * GRID_SIZE - 2);
+            });
+            
+            // 绘制起点和终点
+            drawPosition(startPos, '#2ecc71', 'S');
+            drawPosition(endPos, '#e74c3c', 'E');
+        }
+
+        // 绘制网格分解
+        function drawGridDecomposition() {
+            // 绘制障碍物
+            ctx.fillStyle = '#9b59b6';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x * GRID_SIZE + 1, obs.y * GRID_SIZE + 1, 
+                              obs.width * GRID_SIZE - 2, obs.height * GRID_SIZE - 2);
+            });
+            
+            // 标注单元编号
+            ctx.fillStyle = '#666';
+            ctx.font = '10px Arial';
+            let cellNum = 1;
+            for (let x = 0; x < COLS; x++) {
+                for (let y = 0; y < ROWS; y++) {
+                    if (!isObstacle(x, y)) {
+                        ctx.fillText(cellNum++, x * GRID_SIZE + 10, y * GRID_SIZE + 18);
+                    }
+                }
+            }
+            
+            // 绘制起点和终点
+            drawPosition(startPos, '#2ecc71', 'S');
+            drawPosition(endPos, '#e74c3c', 'E');
+        }
+
+        // 绘制自由单元
+        function drawFreeCells() {
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+            freeCells.forEach(cell => {
+                ctx.fillRect(cell.x * GRID_SIZE + 1, cell.y * GRID_SIZE + 1, 
+                              GRID_SIZE - 2, GRID_SIZE - 2);
+            });
+            
+            // 绘制障碍物
+            ctx.fillStyle = '#9b59b6';
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x * GRID_SIZE + 1, obs.y * GRID_SIZE + 1, 
+                              obs.width * GRID_SIZE - 2, obs.height * GRID_SIZE - 2);
+            });
+            
+            // 绘制起点和终点
+            drawPosition(startPos, '#2ecc71', 'S');
+            drawPosition(endPos, '#e74c3c', 'E');
+        }
+
+        // 绘制连通图
+        function drawConnectivityGraph() {
+            ctx.strokeStyle = 'rgba(149, 165, 166, 0.5)';
+            ctx.lineWidth = 2;
+            
+            freeCells.forEach(cell => {
+                const key = `${cell.x},${cell.y}`;
+                if (adjacencyList[key]) {
+                    const cx = cell.x * GRID_SIZE + GRID_SIZE / 2;
+                    const cy = cell.y * GRID_SIZE + GRID_SIZE / 2;
+                    
+                    adjacencyList[key].forEach(neighbor => {
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy);
+                        ctx.lineTo(neighbor.x * GRID_SIZE + GRID_SIZE / 2, 
+                                  neighbor.y * GRID_SIZE + GRID_SIZE / 2);
+                        ctx.stroke();
+                    });
+                }
+            });
+        }
+
+        // 绘制最优路径
+        function drawOptimalPath() {
+            if (optimalPath.length < 2) return;
+            
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([]);
+            
+            ctx.beginPath();
+            ctx.moveTo(optimalPath[0].x * GRID_SIZE + GRID_SIZE / 2, 
+                      optimalPath[0].y * GRID_SIZE + GRID_SIZE / 2);
+            
+            for (let i = 1; i < optimalPath.length; i++) {
+                ctx.lineTo(optimalPath[i].x * GRID_SIZE + GRID_SIZE / 2, 
+                          optimalPath[i].y * GRID_SIZE + GRID_SIZE / 2);
+            }
+            
+            ctx.stroke();
+            
+            // 绘制路径节点
+            ctx.fillStyle = '#f39c12';
+            optimalPath.forEach((node, index) => {
+                if (index % 2 === 0 || index === optimalPath.length - 1) {
+                    ctx.beginPath();
+                    ctx.arc(node.x * GRID_SIZE + GRID_SIZE / 2, 
+                            node.y * GRID_SIZE + GRID_SIZE / 2, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        // 绘制位置点
+        function drawPosition(pos, color, label) {
+            const cx = pos.x * GRID_SIZE + GRID_SIZE / 2;
+            const cy = pos.y * GRID_SIZE + GRID_SIZE / 2;
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, cx, cy);
+        }
+
+        // 更新步骤指示器
+        function updateStepIndicators() {
+            for (let i = 1; i <= 5; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                stepElement.classList.remove('active', 'completed');
+                if (i < currentStep) {
+                    stepElement.classList.add('completed');
+                } else if (i === currentStep) {
+                    stepElement.classList.add('active');
+                }
+            }
+            
+            document.getElementById('stepDescription').textContent = stepDescriptions[currentStep];
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < 5) {
+                currentStep++;
+                updateStepIndicators();
+                render();
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepIndicators();
+                render();
+            }
+        }
+
+        // 重置
+        function resetDemo() {
+            currentStep = 1;
+            isAnimating = false;
+            updateStepIndicators();
+            render();
+        }
+
+        // 自动播放
+        function autoPlay() {
+            if (isAnimating) {
+                isAnimating = false;
+                return;
+            }
+            
+            currentStep = 1;
+            isAnimating = true;
+            updateStepIndicators();
+            
+            const animate = () => {
+                if (!isAnimating) return;
+                
+                if (currentStep < 5) {
+                    currentStep++;
+                    updateStepIndicators();
+                    render();
+                    setTimeout(animate, 2000);
+                } else {
+                    isAnimating = false;
+                }
+            };
+            
+            animate();
+        }
+
+        // 初始化演示
+        init();
+    </script>
+</body>
+</html>
