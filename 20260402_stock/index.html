@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CNN 恐慌指数 - 实时市场情绪</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: #111827;
+      --bg-card-hover: #1f2937;
+      --fear: #ff4757;
+      --neutral: #ffa502;
+      --greed: #00d4aa;
+      --text-primary: #ffffff;
+      --text-secondary: #94a3b8;
+      --border-color: #1e293b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: 
+        radial-gradient(ellipse at top, rgba(0, 212, 170, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(255, 71, 87, 0.08) 0%, transparent 50%);
+    }
+
+    .container {
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .header h1 span {
+      font-size: 1.75rem;
+    }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .refresh-btn.loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Main Content */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Clock Container */
+    .clock-container {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 2rem;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .clock-wrapper {
+      position: relative;
+      width: 280px;
+      height: 280px;
+    }
+
+    /* Clock Face */
+    .clock-face {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #1a2332, #0d1320);
+      border: 4px solid var(--border-color);
+      position: relative;
+      box-shadow: 
+        0 0 40px rgba(0, 0, 0, 0.5),
+        inset 0 0 60px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Color zones on clock */
+    .clock-zones {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+
+    .zone {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%);
+      opacity: 0.3;
+    }
+
+    .zone-fear { background: var(--fear); transform: rotate(-90deg); }
+    .zone-neutral-fear { background: #ff8844; transform: rotate(-45deg); }
+    .zone-neutral { background: #ffd93d; transform: rotate(0deg); }
+    .zone-neutral-greed { background: #88dd66; transform: rotate(45deg); }
+    .zone-greed { background: var(--greed); transform: rotate(90deg); }
+
+    /* Clock center decoration */
+    .clock-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #151d2b, #0a0f18);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .clock-value {
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1;
+      transition: color 0.5s ease;
+    }
+
+    .clock-label {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+      padding: 0.2rem 0.8rem;
+      border-radius: 15px;
+      transition: all 0.3s ease;
+    }
+
+    /* Clock hand */
+    .clock-hand {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      width: 6px;
+      height: 110px;
+      background: linear-gradient(to top, var(--fear), var(--greed));
+      transform-origin: bottom center;
+      transform: translateX(-50%) rotate(-90deg);
+      border-radius: 3px;
+      transition: transform 1s cubic-bezier(0.4, 2.3, 0.3, 1);
+      box-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
+    }
+
+    .clock-hand::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 16px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Clock ticks */
+    .clock-ticks {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .tick {
+      position: absolute;
+      width: 2px;
+      height: 10px;
+      background: var(--text-secondary);
+      top: 8px;
+      left: 50%;
+      transform-origin: center 132px;
+      opacity: 0.5;
+    }
+
+    .tick.major {
+      width: 3px;
+      height: 15px;
+      opacity: 0.8;
+    }
+
+    .tick-label {
+      position: absolute;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transform: translate(-50%, -50%);
+    }
+
+    /* Status info */
+    .clock-status {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .clock-status span {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--greed);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Countdown */
+    .countdown {
+      font-family: monospace;
+      color: var(--greed);
+    }
+
+    /* Advice Panel */
+    .advice-panel {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      transition: border-color 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .advice-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .advice-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .advice-info h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      transition: color 0.3s ease;
+    }
+
+    .advice-info p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .advice-description {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .advice-list {
+      list-style: none;
+      flex: 1;
+    }
+
+    .advice-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .advice-list li:last-child {
+      border-bottom: none;
+    }
+
+    .advice-list li::before {
+      content: "→";
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: color 0.3s ease;
+    }
+
+    /* Update time */
+    .update-time {
+      margin-top: auto;
+      padding-top: 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* Loading State */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 14, 23, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--greed);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    /* Error State */
+    .error-message {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid var(--fear);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .error-message p {
+      color: var(--fear);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Hot Sectors Section */
+    .hot-sectors {
+      margin-top: 1.5rem;
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .hot-sectors-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .hot-sectors-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hot-sectors-header h3 span {
+      animation: fire 1s ease-in-out infinite;
+    }
+
+    @keyframes fire {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .sector-tabs {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .sector-tab {
+      padding: 0.4rem 0.8rem;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sector-tab.active {
+      background: var(--greed);
+      border-color: var(--greed);
+      color: var(--bg-primary);
+    }
+
+    .sectors-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .sectors-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .sectors-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .sector-card {
+      background: var(--bg-primary);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+
+    .sector-card:hover {
+      border-color: var(--greed);
+      transform: translateY(-2px);
+    }
+
+    .sector-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .sector-name .trend {
+      font-size: 0.75rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .trend.up {
+      background: rgba(0, 212, 170, 0.2);
+      color: var(--greed);
+    }
+
+    .trend.down {
+      background: rgba(255, 71, 87, 0.2);
+      color: var(--fear);
+    }
+
+    .sector-change {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .sector-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .sector-links a {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.75rem;
+      transition: all 0.2s ease;
+    }
+
+    .sector-links a:hover {
+      background: rgba(0, 212, 170, 0.1);
+      color: var(--greed);
+    }
+
+    .sector-links a.etf {
+      background: rgba(0, 212, 170, 0.08);
+      color: var(--greed);
+    }
+
+    .sector-links a .icon {
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .sector-links .info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sector-links .label {
+      color: var(--text-secondary);
+      opacity: 0.7;
+      min-width: 26px;
+      flex-shrink: 0;
+    }
+
+    .sector-links .code {
+      font-family: monospace;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .sector-links .name {
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .sector-links .change {
+      font-family: monospace;
+      font-weight: 600;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .sector-links .change.up {
+      background: rgba(0, 212, 170, 0.15);
+      color: var(--greed);
+    }
+
+    .sector-links .change.down {
+      background: rgba(255, 71, 87, 0.15);
+      color: var(--fear);
+    }
+
+    /* Data Source Badge */
+    .sectors-header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .data-source-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.7rem;
+      background: rgba(0, 212, 170, 0.1);
+      border-radius: 20px;
+      font-size: 0.75rem;
+    }
+
+    .data-source-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--greed);
+    }
+
+    .data-source-badge.disconnected .dot {
+      background: var(--fear);
+    }
+
+    .data-source-badge .source-text {
+      color: var(--text-secondary);
+    }
+
+    /* Loading Placeholder */
+    .loading-placeholder {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      color: var(--text-secondary);
+      gap: 1rem;
+    }
+
+    .loading-placeholder .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--greed);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    /* Sector Card Loading State */
+    .sector-card.loading {
+      opacity: 0.7;
+    }
+
+    .sector-card .loading-shimmer {
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { opacity: 0.3; }
+      50% { opacity: 0.6; }
+      100% { opacity: 0.3; }
+    }
+
+    /* Futu Connection Panel */
+    .futu-panel {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      margin-top: 1.5rem;
+    }
+
+    .futu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .futu-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .futu-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    .futu-status.connected {
+      background: rgba(0, 212, 170, 0.15);
+      color: var(--greed);
+    }
+
+    .futu-status.disconnected {
+      background: rgba(255, 71, 87, 0.15);
+      color: var(--fear);
+    }
+
+    .futu-status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .futu-status.connected .dot {
+      background: var(--greed);
+      animation: pulse 2s infinite;
+    }
+
+    .futu-status.disconnected .dot {
+      background: var(--fear);
+    }
+
+    .futu-content {
+      display: flex;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+
+    .futu-info {
+      flex: 1;
+    }
+
+    .futu-info p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .futu-steps {
+      list-style: none;
+    }
+
+    .futu-steps li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .futu-steps li .num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .futu-steps li .step-link {
+      color: var(--greed);
+      text-decoration: none;
+    }
+
+    .futu-steps li .step-link:hover {
+      text-decoration: underline;
+    }
+
+    .futu-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-width: 180px;
+    }
+
+    .futu-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      text-decoration: none;
+    }
+
+    .futu-btn.primary {
+      background: var(--greed);
+      color: var(--bg-primary);
+    }
+
+    .futu-btn.primary:hover {
+      background: #00e6b8;
+    }
+
+    .futu-btn.secondary {
+      background: var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .futu-btn.secondary:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .futu-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .futu-btn.loading {
+      pointer-events: none;
+    }
+
+    .futu-btn.loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @media (max-width: 768px) {
+      .futu-content {
+        flex-direction: column;
+      }
+
+      .futu-actions {
+        flex-direction: row;
+        min-width: auto;
+      }
+
+      .futu-btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>
+        <span>📈</span>
+        CNN 恐慌指数
+      </h1>
+      <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        刷新
+      </button>
+    </header>
+
+    <!-- Error Message -->
+    <div class="error-message" id="errorMessage" style="display: none;">
+      <p id="errorText">加载失败，请稍后重试</p>
+      <button class="refresh-btn" onclick="fetchData()" style="margin: 0 auto;">
+        重新加载
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Clock -->
+      <div class="clock-container">
+        <div class="clock-wrapper">
+          <div class="clock-face">
+            <!-- Color zones -->
+            <div class="clock-zones">
+              <div class="zone zone-fear"></div>
+              <div class="zone zone-neutral-fear"></div>
+              <div class="zone zone-neutral"></div>
+              <div class="zone zone-neutral-greed"></div>
+              <div class="zone zone-greed"></div>
+            </div>
+            
+            <!-- Clock ticks -->
+            <div class="clock-ticks" id="clockTicks"></div>
+            
+            <!-- Center display -->
+            <div class="clock-center">
+              <div class="clock-value" id="clockValue">--</div>
+              <div class="clock-label" id="clockLabel">加载中</div>
+            </div>
+            
+            <!-- Hand -->
+            <div class="clock-hand" id="clockHand"></div>
+          </div>
+        </div>
+
+        <div class="clock-status">
+          <span><span class="status-dot"></span> 实时监控</span>
+          <span>刷新倒计时: <span class="countdown" id="countdown">60</span>s</span>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background: var(--fear)"></div>
+            恐慌
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ffd93d"></div>
+            中性
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: var(--greed)"></div>
+            贪婪
+          </div>
+        </div>
+      </div>
+
+      <!-- Advice Panel -->
+      <div class="advice-panel" id="advicePanel">
+        <div class="advice-header">
+          <div class="advice-icon" id="adviceIcon">💡</div>
+          <div class="advice-info">
+            <h3 id="adviceTitle">加载中...</h3>
+            <p id="adviceSubtitle">正在获取投资建议</p>
+          </div>
+        </div>
+        <p class="advice-description" id="adviceDescription">
+          正在加载市场分析...
+        </p>
+        <ul class="advice-list" id="adviceList">
+          <li>等待数据加载...</li>
+        </ul>
+        <div class="update-time" id="updateTime">
+          数据更新时间: --
+        </div>
+      </div>
+    </div>
+
+    <!-- Hot Sectors Section -->
+    <section class="hot-sectors">
+      <div class="hot-sectors-header">
+        <h3>
+          <span>🔥</span>
+          US Market Hot Sectors
+        </h3>
+        <div class="sectors-header-right">
+          <div class="data-source-badge" id="dataSourceBadge">
+            <span class="dot"></span>
+            <span class="source-text">Loading...</span>
+          </div>
+          <div class="sector-tabs">
+            <button class="sector-tab active" data-period="1D">1D</button>
+            <button class="sector-tab" data-period="1W">1W</button>
+            <button class="sector-tab" data-period="1M">1M</button>
+            <button class="sector-tab" data-period="3M">3M</button>
+          </div>
+        </div>
+      </div>
+      <div class="sectors-grid" id="sectorsGrid">
+        <!-- 板块数据将通过JavaScript动态加载 -->
+        <div class="loading-placeholder">
+          <div class="spinner"></div>
+          <span>Loading hot sectors...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Source Panel -->
+    <section class="futu-panel">
+      <div class="futu-header">
+        <h3>
+          <span>📡</span>
+          数据源状态
+        </h3>
+        <div class="futu-status disconnected" id="futuStatus">
+          <span class="dot"></span>
+          <span id="futuStatusText">检查中</span>
+        </div>
+      </div>
+      <div class="futu-content">
+        <div class="futu-info">
+          <p>通过 Yahoo Finance API 获取美股实时涨跌幅数据，数据每分钟自动刷新。</p>
+          <ul class="futu-steps">
+            <li>
+              <span class="num">1</span>
+              支持多个时间段：1D（一天）、1W（一周）、1M（一月）、3M（三月）
+            </li>
+            <li>
+              <span class="num">2</span>
+              显示5大热门板块：人工智能、半导体、新能源、医疗健康、金融
+            </li>
+            <li>
+              <span class="num">3</span>
+              每只股票显示对应ETF和3支龙头股
+            </li>
+            <li>
+              <span class="num">4</span>
+              点击股票代码可跳转到 Yahoo Finance 查看详细K线图
+            </li>
+          </ul>
+        </div>
+        <div class="futu-actions">
+          <button class="futu-btn secondary" id="openServerFolderBtn" onclick="openServerFolder()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>
+            打开服务器目录
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script>
+    // 配置
+    const API_URL = 'https://api.alternative.me/fng/';
+    const SECTOR_API_URL = 'http://localhost:3000/api/hot-sectors';
+    const REFRESH_INTERVAL = 60000; // 60秒
+    const SECTOR_REFRESH_INTERVAL = 300000; // 5分钟刷新板块数据
+
+    // DOM 元素
+    const clockValue = document.getElementById('clockValue');
+    const clockLabel = document.getElementById('clockLabel');
+    const clockHand = document.getElementById('clockHand');
+    const advicePanel = document.getElementById('advicePanel');
+    const adviceIcon = document.getElementById('adviceIcon');
+    const adviceTitle = document.getElementById('adviceTitle');
+    const adviceSubtitle = document.getElementById('adviceSubtitle');
+    const adviceDescription = document.getElementById('adviceDescription');
+    const adviceList = document.getElementById('adviceList');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const errorMessage = document.getElementById('errorMessage');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const updateTime = document.getElementById('updateTime');
+    const countdown = document.getElementById('countdown');
+    const clockTicks = document.getElementById('clockTicks');
+    const sectorsGrid = document.getElementById('sectorsGrid');
+    const dataSourceBadge = document.getElementById('dataSourceBadge');
+    const futuStatus = document.getElementById('futuStatus');
+    const futuStatusText = document.getElementById('futuStatusText');
+
+    // 检查服务器连接状态
+    async function checkServerStatus() {
+      try {
+        const response = await fetch('http://localhost:3000/api/health');
+        const data = await response.json();
+
+        if (data.status === 'ok') {
+          if (data.futuConnected) {
+            updateFutuStatus(true, '富途 OpenD 已连接 ✓');
+          } else if (data.portOpen) {
+            updateFutuStatus(false, '富途 OpenD 未就绪');
+          } else {
+            updateFutuStatus(false, '富途 OpenD 未运行');
+          }
+        } else {
+          updateFutuStatus(false, '服务器异常');
+        }
+      } catch (error) {
+        updateFutuStatus(false, '服务器未运行');
+      }
+    }
+
+    // 更新富途连接状态显示
+    function updateFutuStatus(connected, text) {
+      futuStatusText.textContent = text;
+      if (connected) {
+        futuStatus.classList.remove('disconnected');
+        futuStatus.classList.add('connected');
+      } else {
+        futuStatus.classList.remove('connected');
+        futuStatus.classList.add('disconnected');
+      }
+    }
+
+    // 打开服务器目录
+    function openServerFolder() {
+      window.open('file:///d:/huqianqian_git/AIAgent/20260402_stock/server');
+    }
+
+    // 板块名称emoji映射
+    const sectorEmojis = {
+      'AI & Tech': '🤖',
+      'Semiconductor': '💾',
+      'EV & Energy': '⚡',
+      'Healthcare': '💊',
+      'Finance': '🏦',
+      'Default': '📊'
+    };
+
+    // 当前选中的时间段
+    let currentPeriod = '1D';
+
+    // 生成板块卡片HTML
+    function generateSectorCard(sector, index) {
+      const emoji = sectorEmojis[sector.name] || sectorEmojis.Default;
+      const trendClass = sector.trend === 'up' ? 'up' : 'down';
+      const trendText = sector.trend === 'up' ? 'Hot' : 'Cool';
+
+      // 生成ETF行（带涨跌幅）
+      const etfChangeClass = sector.etf.change >= 0 ? 'up' : 'down';
+      const etfHtml = `
+        <a href="https://finance.yahoo.com/quote/${sector.etf.code}/chart" target="_blank" class="etf">
+          <span class="icon">📊</span>
+          <span class="info">
+            <span class="label">ETF</span>
+            <span class="code">${sector.etf.code}</span>
+          </span>
+          <span class="change ${etfChangeClass}">${sector.etf.changeText}</span>
+        </a>
+      `;
+
+      // 生成股票行（带涨跌幅）
+      let stocksHtml = sector.stocks.map(stock => {
+        const changeClass = stock.change >= 0 ? 'up' : 'down';
+        return `
+          <a href="https://finance.yahoo.com/quote/${stock.code}/chart" target="_blank">
+            <span class="icon">📈</span>
+            <span class="info">
+              <span class="code">${stock.code}</span>
+              <span class="name">${stock.name}</span>
+            </span>
+            <span class="change ${changeClass}">${stock.changeText}</span>
+          </a>
+        `;
+      }).join('');
+
+      return `
+        <div class="sector-card" data-index="${index}">
+          <div class="sector-name">
+            ${emoji} ${sector.nameCn || sector.name}
+            <span class="trend ${trendClass}">${trendText}</span>
+          </div>
+          <div class="sector-change">${sector.change}</div>
+          <div class="sector-links">
+            ${etfHtml}
+            ${stocksHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // 更新数据源状态指示器
+    function updateDataSourceBadge(connected, source) {
+      if (connected) {
+        dataSourceBadge.classList.remove('disconnected');
+        dataSourceBadge.innerHTML = `
+          <span class="dot"></span>
+          <span class="source-text">富途 OpenD 实时数据</span>
+        `;
+      } else {
+        dataSourceBadge.classList.add('disconnected');
+        dataSourceBadge.innerHTML = `
+          <span class="dot"></span>
+          <span class="source-text">模拟数据</span>
+        `;
+      }
+    }
+
+    // 获取热门板块数据
+    async function fetchHotSectors(period = '1W') {
+      try {
+        const response = await fetch(`${SECTOR_API_URL}?period=${period}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch sectors');
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          // 更新数据源指示器
+          updateDataSourceBadge(result.connected, result.source);
+          // 更新富途连接状态
+          updateFutuStatus(result.connected, result.connected ? '实时数据' : '模拟数据');
+
+          // 生成板块卡片
+          sectorsGrid.innerHTML = result.data
+            .map((sector, index) => generateSectorCard(sector, index))
+            .join('');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch from Futu API, using fallback data:', error);
+
+        // API连接失败，使用内置的静态数据
+        updateDataSourceBadge(false, 'fallback');
+        updateFutuStatus(false, '服务器未运行');
+
+        // 不同时间段的fallback数据
+        const fallbackDataByPeriod = {
+          '1D': [
+            {
+              id: 'AI_Tech',
+              name: 'AI & Tech',
+              nameCn: '人工智能',
+              trend: 'up',
+              change: '+1.2%',
+              avgChange: 1.2,
+              etf: { code: 'QQQ', name: 'Invesco QQQ', change: 1.5, changeText: '+1.5%' },
+              stocks: [
+                { code: 'NVDA', name: 'NVIDIA', change: 2.3, changeText: '+2.3%' },
+                { code: 'MSFT', name: 'Microsoft', change: 0.8, changeText: '+0.8%' },
+                { code: 'GOOGL', name: 'Alphabet', change: 0.5, changeText: '+0.5%' }
+              ]
+            },
+            {
+              id: 'Semiconductor',
+              name: 'Semiconductor',
+              nameCn: '半导体',
+              trend: 'up',
+              change: '+1.8%',
+              avgChange: 1.8,
+              etf: { code: 'SMH', name: 'VanEck Semi', change: 2.1, changeText: '+2.1%' },
+              stocks: [
+                { code: 'AMD', name: 'AMD', change: 2.5, changeText: '+2.5%' },
+                { code: 'INTC', name: 'Intel', change: 0.3, changeText: '+0.3%' },
+                { code: 'ASML', name: 'ASML', change: 1.2, changeText: '+1.2%' }
+              ]
+            },
+            {
+              id: 'EV_Energy',
+              name: 'EV & Energy',
+              nameCn: '新能源',
+              trend: 'down',
+              change: '-0.8%',
+              avgChange: -0.8,
+              etf: { code: 'ICLN', name: 'Clean Energy', change: -0.5, changeText: '-0.5%' },
+              stocks: [
+                { code: 'TSLA', name: 'Tesla', change: -1.2, changeText: '-1.2%' },
+                { code: 'ENPH', name: 'Enphase', change: -0.3, changeText: '-0.3%' },
+                { code: 'FSLR', name: 'First Solar', change: 0.2, changeText: '+0.2%' }
+              ]
+            },
+            {
+              id: 'Healthcare',
+              name: 'Healthcare',
+              nameCn: '医疗健康',
+              trend: 'up',
+              change: '+0.5%',
+              avgChange: 0.5,
+              etf: { code: 'XLV', name: 'Health Care', change: 0.3, changeText: '+0.3%' },
+              stocks: [
+                { code: 'JNJ', name: 'J&J', change: 0.1, changeText: '+0.1%' },
+                { code: 'UNH', name: 'UnitedHealth', change: 0.6, changeText: '+0.6%' },
+                { code: 'LLY', name: 'Eli Lilly', change: 0.9, changeText: '+0.9%' }
+              ]
+            },
+            {
+              id: 'Finance',
+              name: 'Finance',
+              nameCn: '金融',
+              trend: 'up',
+              change: '+0.6%',
+              avgChange: 0.6,
+              etf: { code: 'XLF', name: 'Financials', change: 0.4, changeText: '+0.4%' },
+              stocks: [
+                { code: 'JPM', name: 'JPMorgan', change: 0.7, changeText: '+0.7%' },
+                { code: 'BAC', name: 'Bank of America', change: 0.2, changeText: '+0.2%' },
+                { code: 'GS', name: 'Goldman Sachs', change: 0.5, changeText: '+0.5%' }
+              ]
+            }
+          ],
+          '1W': [
+            {
+              id: 'AI_Tech',
+              name: 'AI & Tech',
+              nameCn: '人工智能',
+              trend: 'up',
+              change: '+5.8%',
+              avgChange: 5.8,
+              etf: { code: 'QQQ', name: 'Invesco QQQ', change: 5.2, changeText: '+5.2%' },
+              stocks: [
+                { code: 'NVDA', name: 'NVIDIA', change: 8.5, changeText: '+8.5%' },
+                { code: 'MSFT', name: 'Microsoft', change: 3.2, changeText: '+3.2%' },
+                { code: 'GOOGL', name: 'Alphabet', change: 2.1, changeText: '+2.1%' }
+              ]
+            },
+            {
+              id: 'Semiconductor',
+              name: 'Semiconductor',
+              nameCn: '半导体',
+              trend: 'up',
+              change: '+4.2%',
+              avgChange: 4.2,
+              etf: { code: 'SMH', name: 'VanEck Semi', change: 4.8, changeText: '+4.8%' },
+              stocks: [
+                { code: 'AMD', name: 'AMD', change: 5.5, changeText: '+5.5%' },
+                { code: 'INTC', name: 'Intel', change: 2.3, changeText: '+2.3%' },
+                { code: 'ASML', name: 'ASML', change: 4.1, changeText: '+4.1%' }
+              ]
+            },
+            {
+              id: 'EV_Energy',
+              name: 'EV & Energy',
+              nameCn: '新能源',
+              trend: 'up',
+              change: '+3.5%',
+              avgChange: 3.5,
+              etf: { code: 'ICLN', name: 'Clean Energy', change: 3.8, changeText: '+3.8%' },
+              stocks: [
+                { code: 'TSLA', name: 'Tesla', change: 4.2, changeText: '+4.2%' },
+                { code: 'ENPH', name: 'Enphase', change: 2.5, changeText: '+2.5%' },
+                { code: 'FSLR', name: 'First Solar', change: 3.1, changeText: '+3.1%' }
+              ]
+            },
+            {
+              id: 'Healthcare',
+              name: 'Healthcare',
+              nameCn: '医疗健康',
+              trend: 'up',
+              change: '+2.1%',
+              avgChange: 2.1,
+              etf: { code: 'XLV', name: 'Health Care', change: 1.5, changeText: '+1.5%' },
+              stocks: [
+                { code: 'JNJ', name: 'J&J', change: 0.8, changeText: '+0.8%' },
+                { code: 'UNH', name: 'UnitedHealth', change: 2.5, changeText: '+2.5%' },
+                { code: 'LLY', name: 'Eli Lilly', change: 3.2, changeText: '+3.2%' }
+              ]
+            },
+            {
+              id: 'Finance',
+              name: 'Finance',
+              nameCn: '金融',
+              trend: 'up',
+              change: '+1.8%',
+              avgChange: 1.8,
+              etf: { code: 'XLF', name: 'Financials', change: 1.2, changeText: '+1.2%' },
+              stocks: [
+                { code: 'JPM', name: 'JPMorgan', change: 2.1, changeText: '+2.1%' },
+                { code: 'BAC', name: 'Bank of America', change: 1.5, changeText: '+1.5%' },
+                { code: 'GS', name: 'Goldman Sachs', change: 1.8, changeText: '+1.8%' }
+              ]
+            }
+          ],
+          '1M': [
+            {
+              id: 'AI_Tech',
+              name: 'AI & Tech',
+              nameCn: '人工智能',
+              trend: 'up',
+              change: '+18.5%',
+              avgChange: 18.5,
+              etf: { code: 'QQQ', name: 'Invesco QQQ', change: 15.3, changeText: '+15.3%' },
+              stocks: [
+                { code: 'NVDA', name: 'NVIDIA', change: 28.5, changeText: '+28.5%' },
+                { code: 'MSFT', name: 'Microsoft', change: 12.2, changeText: '+12.2%' },
+                { code: 'GOOGL', name: 'Alphabet', change: 8.7, changeText: '+8.7%' }
+              ]
+            },
+            {
+              id: 'Semiconductor',
+              name: 'Semiconductor',
+              nameCn: '半导体',
+              trend: 'up',
+              change: '+22.1%',
+              avgChange: 22.1,
+              etf: { code: 'SMH', name: 'VanEck Semi', change: 24.5, changeText: '+24.5%' },
+              stocks: [
+                { code: 'AMD', name: 'AMD', change: 18.5, changeText: '+18.5%' },
+                { code: 'INTC', name: 'Intel', change: 5.3, changeText: '+5.3%' },
+                { code: 'ASML', name: 'ASML', change: 15.2, changeText: '+15.2%' }
+              ]
+            },
+            {
+              id: 'EV_Energy',
+              name: 'EV & Energy',
+              nameCn: '新能源',
+              trend: 'down',
+              change: '-5.2%',
+              avgChange: -5.2,
+              etf: { code: 'ICLN', name: 'Clean Energy', change: -3.8, changeText: '-3.8%' },
+              stocks: [
+                { code: 'TSLA', name: 'Tesla', change: -8.5, changeText: '-8.5%' },
+                { code: 'ENPH', name: 'Enphase', change: -2.1, changeText: '-2.1%' },
+                { code: 'FSLR', name: 'First Solar', change: 1.5, changeText: '+1.5%' }
+              ]
+            },
+            {
+              id: 'Healthcare',
+              name: 'Healthcare',
+              nameCn: '医疗健康',
+              trend: 'up',
+              change: '+6.8%',
+              avgChange: 6.8,
+              etf: { code: 'XLV', name: 'Health Care', change: 5.2, changeText: '+5.2%' },
+              stocks: [
+                { code: 'JNJ', name: 'J&J', change: 3.5, changeText: '+3.5%' },
+                { code: 'UNH', name: 'UnitedHealth', change: 8.5, changeText: '+8.5%' },
+                { code: 'LLY', name: 'Eli Lilly', change: 12.8, changeText: '+12.8%' }
+              ]
+            },
+            {
+              id: 'Finance',
+              name: 'Finance',
+              nameCn: '金融',
+              trend: 'up',
+              change: '+8.5%',
+              avgChange: 8.5,
+              etf: { code: 'XLF', name: 'Financials', change: 7.2, changeText: '+7.2%' },
+              stocks: [
+                { code: 'JPM', name: 'JPMorgan', change: 12.5, changeText: '+12.5%' },
+                { code: 'BAC', name: 'Bank of America', change: 6.8, changeText: '+6.8%' },
+                { code: 'GS', name: 'Goldman Sachs', change: 9.2, changeText: '+9.2%' }
+              ]
+            }
+          ],
+          '3M': [
+            {
+              id: 'AI_Tech',
+              name: 'AI & Tech',
+              nameCn: '人工智能',
+              trend: 'up',
+              change: '+32.5%',
+              avgChange: 32.5,
+              etf: { code: 'QQQ', name: 'Invesco QQQ', change: 28.5, changeText: '+28.5%' },
+              stocks: [
+                { code: 'NVDA', name: 'NVIDIA', change: 55.2, changeText: '+55.2%' },
+                { code: 'MSFT', name: 'Microsoft', change: 22.5, changeText: '+22.5%' },
+                { code: 'GOOGL', name: 'Alphabet', change: 18.3, changeText: '+18.3%' }
+              ]
+            },
+            {
+              id: 'Semiconductor',
+              name: 'Semiconductor',
+              nameCn: '半导体',
+              trend: 'up',
+              change: '+38.2%',
+              avgChange: 38.2,
+              etf: { code: 'SMH', name: 'VanEck Semi', change: 42.5, changeText: '+42.5%' },
+              stocks: [
+                { code: 'AMD', name: 'AMD', change: 32.5, changeText: '+32.5%' },
+                { code: 'INTC', name: 'Intel', change: 12.5, changeText: '+12.5%' },
+                { code: 'ASML', name: 'ASML', change: 28.5, changeText: '+28.5%' }
+              ]
+            },
+            {
+              id: 'EV_Energy',
+              name: 'EV & Energy',
+              nameCn: '新能源',
+              trend: 'down',
+              change: '-12.5%',
+              avgChange: -12.5,
+              etf: { code: 'ICLN', name: 'Clean Energy', change: -8.5, changeText: '-8.5%' },
+              stocks: [
+                { code: 'TSLA', name: 'Tesla', change: -18.5, changeText: '-18.5%' },
+                { code: 'ENPH', name: 'Enphase', change: -5.2, changeText: '-5.2%' },
+                { code: 'FSLR', name: 'First Solar', change: 2.8, changeText: '+2.8%' }
+              ]
+            },
+            {
+              id: 'Healthcare',
+              name: 'Healthcare',
+              nameCn: '医疗健康',
+              trend: 'up',
+              change: '+12.5%',
+              avgChange: 12.5,
+              etf: { code: 'XLV', name: 'Health Care', change: 10.2, changeText: '+10.2%' },
+              stocks: [
+                { code: 'JNJ', name: 'J&J', change: 6.5, changeText: '+6.5%' },
+                { code: 'UNH', name: 'UnitedHealth', change: 15.2, changeText: '+15.2%' },
+                { code: 'LLY', name: 'Eli Lilly', change: 25.5, changeText: '+25.5%' }
+              ]
+            },
+            {
+              id: 'Finance',
+              name: 'Finance',
+              nameCn: '金融',
+              trend: 'up',
+              change: '+18.5%',
+              avgChange: 18.5,
+              etf: { code: 'XLF', name: 'Financials', change: 15.2, changeText: '+15.2%' },
+              stocks: [
+                { code: 'JPM', name: 'JPMorgan', change: 25.5, changeText: '+25.5%' },
+                { code: 'BAC', name: 'Bank of America', change: 12.5, changeText: '+12.5%' },
+                { code: 'GS', name: 'Goldman Sachs', change: 18.5, changeText: '+18.5%' }
+              ]
+            }
+          ]
+        };
+
+        const fallbackData = fallbackDataByPeriod[period] || fallbackDataByPeriod['1W'];
+
+        sectorsGrid.innerHTML = fallbackData
+          .map((sector, index) => generateSectorCard(sector, index))
+          .join('');
+      }
+    }
+
+    // 生成时钟刻度
+    function generateTicks() {
+      const labels = ['0', '25', '50', '75', '100'];
+      for (let i = 0; i <= 100; i += 5) {
+        const tick = document.createElement('div');
+        tick.className = 'tick' + (i % 25 === 0 ? ' major' : '');
+        const angle = (i / 100) * 180 - 90;
+        tick.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+        clockTicks.appendChild(tick);
+        
+        // Add labels at major positions
+        if (i % 25 === 0) {
+          const label = document.createElement('div');
+          label.className = 'tick-label';
+          label.textContent = labels[i / 25];
+          const rad = (angle - 90) * Math.PI / 180;
+          const radius = 115;
+          label.style.left = `calc(50% + ${Math.cos(rad) * radius}px)`;
+          label.style.top = `calc(50% + ${Math.sin(rad) * radius}px)`;
+          clockTicks.appendChild(label);
+        }
+      }
+    }
+
+    // 根据数值获取等级信息
+    function getLevelInfo(value) {
+      const valueNum = parseInt(value);
+      
+      if (valueNum <= 10) {
+        return {
+          level: 'extreme_fear',
+          label: '极度恐慌',
+          color: '#ff4757',
+          icon: '😱'
+        };
+      } else if (valueNum <= 25) {
+        return {
+          level: 'fear',
+          label: '恐慌',
+          color: '#ff6b7a',
+          icon: '😰'
+        };
+      } else if (valueNum <= 45) {
+        return {
+          level: 'neutral_fear',
+          label: '轻度恐慌',
+          color: '#ffa502',
+          icon: '😟'
+        };
+      } else if (valueNum <= 55) {
+        return {
+          level: 'neutral',
+          label: '中性',
+          color: '#ffd93d',
+          icon: '😐'
+        };
+      } else if (valueNum <= 75) {
+        return {
+          level: 'greed',
+          label: '贪婪',
+          color: '#6bcb77',
+          icon: '😊'
+        };
+      } else {
+        return {
+          level: 'extreme_greed',
+          label: '极度贪婪',
+          color: '#00d4aa',
+          icon: '🤑'
+        };
+      }
+    }
+
+    // 获取操作建议
+    function getAdvice(value) {
+      const valueNum = parseInt(value);
+      const level = getLevelInfo(valueNum);
+      
+      const adviceData = {
+        extreme_fear: {
+          title: '极度恐慌市场',
+          subtitle: '历史上最佳买入时机之一',
+          description: '当市场处于极度恐慌时，往往是资产价格被低估的时候。历史数据显示，在恐慌指数处于极低水平时买入，长期来看通常能获得不错的回报。',
+          recommendations: [
+            '考虑逐步建仓优质资产，分批买入降低风险',
+            '关注被错杀的优质股票和指数基金',
+            '保持足够的现金储备以应对可能的继续下跌',
+            '避免恐慌性抛售已有的投资',
+            '做好持有3-5年以上的心理准备'
+          ]
+        },
+        fear: {
+          title: '恐慌市场',
+          subtitle: '逆向投资机会显现',
+          description: '市场情绪偏向恐慌，但尚未达到极端水平。这是开始关注投资机会的好时机，但需要谨慎选择标的。',
+          recommendations: [
+            '开始关注优质资产的低吸机会',
+            '分散投资，不要把所有资金集中在单一标的',
+            '可以考虑定投策略，平滑成本',
+            '密切关注基本面良好的标的',
+            '保持警惕，等待更明确的买入信号'
+          ]
+        },
+        neutral_fear: {
+          title: '轻度恐慌市场',
+          subtitle: '观望与准备阶段',
+          description: '市场存在一定恐慌情绪，但相对可控。建议保持观望，等待更好的时机。',
+          recommendations: [
+            '保持现有仓位，不盲目加仓',
+            '密切关注市场动态和新闻',
+            '开始研究潜在的投资标的',
+            '设置理想买入点位提醒',
+            '控制仓位，保留足够的子弹'
+          ]
+        },
+        neutral: {
+          title: '中性市场',
+          subtitle: '保持平衡策略',
+          description: '市场情绪相对平衡，没有明显的恐慌或贪婪倾向。建议保持均衡配置。',
+          recommendations: [
+            '保持股债平衡的配置比例',
+            '坚持定投策略，不改变原有计划',
+            '关注基本面，选择优质标的',
+            '避免追涨杀跌，保持理性',
+            '可以考虑适当配置防御性板块'
+          ]
+        },
+        greed: {
+          title: '贪婪市场',
+          subtitle: '注意风险控制',
+          description: '市场情绪偏向贪婪，资产价格可能已被高估。建议提高警惕，不要追高。',
+          recommendations: [
+            '考虑逐步减仓锁定部分利润',
+            '提高现金或债券的配置比例',
+            '停止追涨，避免盲目加仓',
+            '设置止损位保护已有收益',
+            '开始为下一轮调整做准备'
+          ]
+        },
+        extreme_greed: {
+          title: '极度贪婪市场',
+          subtitle: '高风险警告',
+          description: '市场处于极度贪婪状态，往往预示着回调风险。历史上这是卖出的好时机，而非买入。',
+          recommendations: [
+            '强烈建议逐步减仓特别是高估值品种',
+            '将部分利润转入安全资产（债券、现金）',
+            '不要追高，避免FOMO心理',
+            '做好资产配置再平衡',
+            '警惕市场可能的大幅回调风险'
+          ]
+        }
+      };
+      
+      return adviceData[level.level] || adviceData.neutral;
+    }
+
+    // 更新UI
+    function updateUI(data) {
+      const value = data.value;
+      const levelInfo = getLevelInfo(value);
+      const advice = getAdvice(value);
+      
+      // 更新时钟
+      clockValue.textContent = value;
+      clockValue.style.color = levelInfo.color;
+      
+      clockLabel.textContent = levelInfo.label;
+      clockLabel.style.background = `${levelInfo.color}22`;
+      clockLabel.style.color = levelInfo.color;
+      
+      // 更新指针角度 (0-100 -> -90度到90度)
+      const handAngle = (value / 100) * 180 - 90;
+      clockHand.style.transform = `translateX(-50%) rotate(${handAngle}deg)`;
+      
+      // 更新建议面板
+      advicePanel.style.borderColor = `${levelInfo.color}44`;
+      adviceIcon.textContent = levelInfo.icon;
+      adviceIcon.style.background = `${levelInfo.color}22`;
+      adviceIcon.style.color = levelInfo.color;
+      
+      adviceTitle.textContent = advice.title;
+      adviceTitle.style.color = levelInfo.color;
+      adviceSubtitle.textContent = advice.subtitle;
+      adviceDescription.textContent = advice.description;
+      
+      // 更新建议列表
+      adviceList.innerHTML = advice.recommendations
+        .map(rec => `<li>${rec}</li>`)
+        .join('');
+      
+      // 更新时间
+      const timestamp = new Date(data.timestamp * 1000);
+      updateTime.textContent = `数据更新时间: ${timestamp.toLocaleString('zh-CN')}`;
+      
+      // 隐藏错误
+      errorMessage.style.display = 'none';
+    }
+
+    // 获取数据
+    async function fetchData(showLoading = false) {
+      if (showLoading) {
+        loadingOverlay.classList.add('active');
+      }
+      refreshBtn.classList.add('loading');
+      
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error('网络请求失败');
+        }
+        
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          updateUI(data.data[0]);
+        } else {
+          throw new Error('数据格式错误');
+        }
+        
+        errorMessage.style.display = 'none';
+      } catch (error) {
+        console.error('获取数据失败:', error);
+        errorMessage.style.display = 'block';
+        document.getElementById('errorText').textContent = 
+          `加载失败: ${error.message}，请稍后重试`;
+      } finally {
+        refreshBtn.classList.remove('loading');
+        loadingOverlay.classList.remove('active');
+      }
+    }
+
+    // 倒计时刷新
+    let countdownInterval;
+    let refreshTimeout;
+
+    function startCountdown() {
+      let seconds = 60;
+      countdown.textContent = seconds;
+      
+      if (countdownInterval) clearInterval(countdownInterval);
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      
+      countdownInterval = setInterval(() => {
+        seconds--;
+        countdown.textContent = seconds;
+        if (seconds <= 0) {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+      
+      refreshTimeout = setTimeout(() => {
+        fetchData(false);
+        startCountdown();
+      }, REFRESH_INTERVAL);
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      generateTicks();
+      fetchData(true);
+      startCountdown();
+      initSectorTabs();
+      // 获取热门板块数据
+      fetchHotSectors(currentPeriod);
+      // 检查服务器连接状态
+      checkServerStatus();
+
+      // 每5分钟刷新板块数据
+      setInterval(() => {
+        fetchHotSectors(currentPeriod);
+      }, SECTOR_REFRESH_INTERVAL);
+    });
+
+    // 热门板块标签切换
+    function initSectorTabs() {
+      const tabs = document.querySelectorAll('.sector-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const period = tab.dataset.period;
+          currentPeriod = period;
+          // 根据选择的时间段获取数据
+          fetchHotSectors(period);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
