@@ -66,3 +66,61 @@
 - 使用 Fetch API 调用 Alternative.me Fear & Greed Index API
 - CSS变量管理主题颜色
 - CSS动画实现仪表盘效果
+
+---
+
+# 富途交易记录展示网页
+
+## Concept & Vision
+一个简洁直观的功能模块，帮助用户查看其在富途证券账户的历史交易记录。通过连接富途 OpenD，获取用户的成交历史，并以清晰易懂的表格形式展示。
+
+## Design Language
+- **Aesthetic**: 与主页面保持一致的深色金融终端风格
+- **Color Palette**: 与恐慌指数页面保持一致
+- **Typography**: Inter (Google Fonts), system-ui fallback
+- **Motion**: 表格行hover有平滑过渡动画
+
+## Layout & Structure
+- 交易记录面板位于热门板块下方
+- 显示交易表格，包含：时间、股票代码、股票名称、方向（买入/卖出）、成交数量、成交价格、成交金额
+- 支持按时间段筛选（今日、近一周、近一月）
+- 显示连接状态和数据来源
+
+## Features & Interactions
+1. **富途账户连接状态检测**
+   - 自动检测 OpenD 连接状态
+   - 显示连接/断开状态指示器
+2. **历史成交记录获取**
+   - 从富途 OpenD API 获取历史成交数据
+   - proto_id: 2222 (Trd_GetHistoryOrderFillList)
+   - 支持日期范围筛选
+3. **交易表格展示**
+   - 交易时间
+   - 股票代码和名称
+   - 交易方向（买入/卖出，带颜色区分）
+   - 成交数量
+   - 成交价格
+   - 成交金额
+4. **时间段筛选**
+   - 今日成交
+   - 近一周
+   - 近一月
+5. **加载状态**
+   - 数据加载中显示loading动画
+6. **错误处理**
+   - 连接失败时显示友好提示
+
+## Component Inventory
+1. **TradeHistoryPanel**: 交易记录面板容器
+2. **TradeTable**: 交易记录表格
+   - 表头：时间、股票、方向、数量、价格、金额
+   - 表格行：hover高亮效果
+   - 空状态：无交易记录时显示提示
+3. **TradeFilter**: 时间段筛选器
+4. **ConnectionStatus**: 连接状态指示器
+
+## Technical Approach
+- 通过富途 OpenD API 获取交易数据
+- 使用 TCP Socket 通信协议
+- 后端 Express 服务器代理 API 请求
+- 前端通过 fetch 调用后端 API

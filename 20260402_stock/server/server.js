@@ -1,389 +1,45 @@
 const express = require('express');
 const cors = require('cors');
-const net = require('net');
-
-// 富途OpenD配置
-const FUTU_OPEND_HOST = '127.0.0.1';
-const FUTU_OPEND_PORT = 11111;
-const APP_ID = 'futunnative';
-
-// 检查端口是否开放
-function checkPort(host, port) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    socket.setTimeout(2000);
-
-    socket.on('connect', () => {
-      socket.destroy();
-      resolve(true);
-    });
-
-    socket.on('timeout', () => {
-      socket.destroy();
-      resolve(false);
-    });
-
-    socket.on('error', () => {
-      socket.destroy();
-      resolve(false);
-    });
-
-    socket.connect(port, host);
-  });
-}
-
-// 富途 OpenD TCP 客户端
-class FutuClient {
-  constructor() {
-    this.socket = null;
-    this.connected = false;
-    this.requestId = 1;
-    this.callbacks = new Map();
-    this.buffer = Buffer.alloc(0);
-  }
-
-  // 连接 OpenD
-  async connect(retries = 3) {
-    for (let i = 0; i < retries; i++) {
-      console.log(`[FutuClient] 尝试连接 OpenD (${i + 1}/${retries})...`);
-
-      try {
-        const connected = await this.connectSocket();
-        if (connected) {
-          console.log('[FutuClient] ✓ OpenD 连接成功');
-          this.connected = true;
-          return true;
-        }
-      } catch (error) {
-        console.log(`[FutuClient] ✗ 连接失败: ${error.message}`);
-      }
-
-      if (i < retries - 1) {
-        console.log('3秒后重试...');
-        await this.sleep(3000);
-      }
-    }
-
-    console.log('⚠ OpenD 连接失败，将使用模拟数据');
-    return false;
-  }
-
-  // 建立 TCP Socket 连接
-  connectSocket() {
-    return new Promise((resolve, reject) => {
-      this.socket = new net.Socket();
-      this.socket.setTimeout(10000);
-
-      this.socket.on('connect', () => {
-        console.log('[FutuClient] TCP 连接已建立，发送握手...');
-        this.sendHandshake().then(() => {
-          resolve(true);
-        }).catch((err) => {
-          reject(err);
-        });
-      });
-
-      this.socket.on('data', (data) => {
-        this.handleData(data);
-      });
-
-      this.socket.on('error', (err) => {
-        console.log('[FutuClient] Socket 错误:', err.message);
-        reject(err);
-      });
-
-      this.socket.on('timeout', () => {
-        console.log('[FutuClient] 连接超时');
-        reject(new Error('Connection timeout'));
-      });
-
-      this.socket.connect(FUTU_OPEND_PORT, FUTU_OPEND_HOST);
-    });
-  }
-
-  // 处理接收到的数据
-  handleData(data) {
-    this.buffer = Buffer.concat([this.buffer, data]);
-
-    // 解析包：4字节长度 + 包体
-    while (this.buffer.length >= 4) {
-      const bodyLen = this.buffer.readUInt32BE(4);
-      const totalLen = 4 + bodyLen;
-
-      if (this.buffer.length < totalLen) {
-        break; // 数据不完整，等待更多数据
-      }
-
-      const packet = this.buffer.slice(4, totalLen);
-      this.buffer = this.buffer.slice(totalLen);
-
-      this.parsePacket(packet);
-    }
-  }
-
-  // 解析数据包
-  parsePacket(packet) {
-    try {
-      // 包头 2字节 + 2字节serial_no + 4字节proto_id + 2字节包类型
-      if (packet.length < 10) return;
-
-      const protoId = packet.readUInt32BE(6);
-      const serialNo = packet.readUInt32BE(2);
-      const bodyLen = packet.length - 10;
-      const body = bodyLen > 0 ? packet.slice(10) : null;
-
-      // 检查是否是心跳包
-      if (protoId === 0 && bodyLen === 0) {
-        // 发送心跳响应
-        return;
-      }
-
-      // 检查是否有等待的回调
-      if (this.callbacks.has(serialNo)) {
-        const callback = this.callbacks.get(serialNo);
-        this.callbacks.delete(serialNo);
-
-        if (body && body.length > 0) {
-          try {
-            // 尝试解析 JSON
-            const jsonStr = body.toString('utf8').replace(/[\x00-\x1F]/g, '');
-            const response = JSON.parse(jsonStr);
-            callback(null, response);
-          } catch (e) {
-            // 解析失败，传递原始数据
-            callback(null, { raw: body.toString('base64') });
-          }
-        } else {
-          callback(null, {});
-        }
-      }
-    } catch (error) {
-      console.error('[FutuClient] 解析数据包错误:', error.message);
-    }
-  }
-
-  // 发送握手请求
-  async sendHandshake() {
-    return new Promise((resolve, reject) => {
-      const serialNo = this.requestId++;
-      const body = JSON.stringify({
-        'WebSocketProtocolVer': 1,
-        'AutoReconnect': true,
-        'AppID': APP_ID,
-        'AppVersion': '1.0'
-      });
-
-      const packet = this.buildPacket(1001, serialNo, body);
-
-      this.callbacks.set(serialNo, (err, response) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log('[FutuClient] ✓ 握手成功');
-          resolve(response);
-        }
-      });
-
-      this.socket.write(packet);
-
-      // 10秒超时
-      setTimeout(() => {
-        if (this.callbacks.has(serialNo)) {
-          this.callbacks.delete(serialNo);
-          reject(new Error('Handshake timeout'));
-        }
-      }, 10000);
-
-      this.socket.once('data', (data) => {
-        // 握手响应会在下一个数据包里
-      });
-    });
-  }
-
-  // 构建数据包
-  buildPacket(protoId, serialNo, body) {
-    const bodyBuffer = Buffer.from(body, 'utf8');
-    const header = Buffer.alloc(10);
-    header.writeUInt16BE(1, 0); // 包类型：请求
-    header.writeUInt32BE(serialNo, 2);
-    header.writeUInt32BE(protoId, 6);
-
-    const length = header.length + bodyBuffer.length;
-    const packet = Buffer.alloc(4 + length);
-    packet.writeUInt32BE(length, 0);
-    header.copy(packet, 4);
-    bodyBuffer.copy(packet, 4 + header.length);
-
-    return packet;
-  }
-
-  // 发送请求
-  async sendRequest(protoId, body) {
-    if (!this.connected || !this.socket) {
-      throw new Error('Not connected');
-    }
-
-    return new Promise((resolve, reject) => {
-      const serialNo = this.requestId++;
-      const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
-      const packet = this.buildPacket(protoId, serialNo, bodyStr);
-
-      this.callbacks.set(serialNo, (err, response) => {
-        if (err) reject(err);
-        else resolve(response);
-      });
-
-      this.socket.write(packet);
-
-      // 10秒超时
-      setTimeout(() => {
-        if (this.callbacks.has(serialNo)) {
-          this.callbacks.delete(serialNo);
-          reject(new Error('Request timeout'));
-        }
-      }, 10000);
-    });
-  }
-
-  // 获取美股实时报价 (proto_id: 2201)
-  async getMarketSnapshot(codes) {
-    try {
-      console.log(`[FutuClient] 获取报价: ${codes.join(', ')}`);
-
-      // 格式化股票代码：US.NVDA
-      const formattedCodes = codes.map(code => `US.${code}`);
-
-      const body = JSON.stringify({
-        'securityList': formattedCodes
-      });
-
-      const response = await this.sendRequest(2201, body);
-
-      if (response && response.s2c) {
-        const data = response.s2c;
-        if (data.marketSnapshotData && data.marketSnapshotData.length > 0) {
-          return data.marketSnapshotData.map(item => {
-            const code = item.code || '';
-            const symbol = code.replace('US.', '');
-            const curPrice = item.curPrice || 0;
-            const lastClose = item.lastClose || 0;
-            const change = lastClose > 0 ? ((curPrice - lastClose) / lastClose) * 100 : 0;
-
-            return {
-              symbol: symbol,
-              code: symbol,
-              name: ALL_STOCKS.find(s => s.code === symbol)?.name || symbol,
-              currentPrice: curPrice,
-              previousClose: lastClose,
-              change: parseFloat(change.toFixed(2)),
-              changeText: change >= 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`
-            };
-          });
-        }
-      }
-
-      console.log('[FutuClient] ⚠ 无报价数据返回');
-      return null;
-    } catch (error) {
-      console.error('[FutuClient] 获取报价失败:', error.message);
-      return null;
-    }
-  }
-
-  // 获取K线数据 (proto_id: 2204)
-  async getHistoryKline(symbol, period) {
-    try {
-      console.log(`[FutuClient] 获取K线: ${symbol} (${period})`);
-
-      // 转换时间段
-      const periodMap = {
-        '1D': { timeFrame: 'TK_1M', count: 1440 },
-        '1W': { timeFrame: 'TK_5M', count: 672 },
-        '1M': { timeFrame: 'TK_1H', count: 600 },
-        '3M': { timeFrame: 'TK_1H', count: 1800 }
-      };
-      const config = periodMap[period] || periodMap['1D'];
-
-      const body = JSON.stringify({
-        'security': `US.${symbol}`,
-        'timeFrame': config.timeFrame,
-        'maxCount': config.count,
-        'nextReqKey': ''
-      });
-
-      const response = await this.sendRequest(2204, body);
-
-      if (response && response.s2c && response.s2c.klines) {
-        const klines = response.s2c.klines;
-        if (klines.length >= 2) {
-          const firstLine = klines[0].split(',');
-          const lastLine = klines[klines.length - 1].split(',');
-
-          const startPrice = parseFloat(firstLine[2]); // 收盘价
-          const endPrice = parseFloat(lastLine[2]);
-
-          const change = ((endPrice - startPrice) / startPrice) * 100;
-
-          return {
-            symbol: symbol,
-            startPrice: startPrice,
-            endPrice: endPrice,
-            change: parseFloat(change.toFixed(2))
-          };
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error(`[FutuClient] 获取K线失败 (${symbol}):`, error.message);
-      return null;
-    }
-  }
-
-  sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  disconnect() {
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = null;
-    }
-    this.connected = false;
-  }
-}
+const { spawn, exec } = require('child_process');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 存储热门板块数据（带实时价格）
-let hotSectorsData = null;
-let lastUpdateTime = null;
+// 服务器路径
+const SERVER_PATH = path.join(__dirname, 'server.js');
+const WORKING_DIR = __dirname;
+
+// 进程管理
+let serverProcess = null;
+let isShuttingDown = false;
+
+// 富途 OpenD 配置
+const FUTU_OPEND_HOST = '127.0.0.1';
+const FUTU_OPEND_PORT = 11111;
+
+// Python 脚本路径
+const PYTHON_SCRIPT = path.join(__dirname, 'futu_service.py');
 
 // 所有需要查询的股票代码
 const ALL_STOCKS = [
-  // AI & Tech
   { code: 'QQQ', name: 'Invesco QQQ Trust', sector: 'AI & Tech' },
   { code: 'NVDA', name: 'NVIDIA', sector: 'AI & Tech' },
   { code: 'MSFT', name: 'Microsoft', sector: 'AI & Tech' },
   { code: 'GOOGL', name: 'Alphabet', sector: 'AI & Tech' },
-  // Semiconductor
   { code: 'SMH', name: 'VanEck Semiconductor', sector: 'Semiconductor' },
   { code: 'AMD', name: 'AMD', sector: 'Semiconductor' },
   { code: 'INTC', name: 'Intel', sector: 'Semiconductor' },
   { code: 'ASML', name: 'ASML Holding', sector: 'Semiconductor' },
-  // EV & Energy
   { code: 'ICLN', name: 'iShares Clean Energy', sector: 'EV & Energy' },
   { code: 'TSLA', name: 'Tesla', sector: 'EV & Energy' },
   { code: 'ENPH', name: 'Enphase Energy', sector: 'EV & Energy' },
   { code: 'FSLR', name: 'First Solar', sector: 'EV & Energy' },
-  // Healthcare
   { code: 'XLV', name: 'Health Care SPDR', sector: 'Healthcare' },
   { code: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare' },
   { code: 'UNH', name: 'UnitedHealth', sector: 'Healthcare' },
   { code: 'LLY', name: 'Eli Lilly', sector: 'Healthcare' },
-  // Finance
   { code: 'XLF', name: 'Financials SPDR', sector: 'Finance' },
   { code: 'JPM', name: 'JPMorgan Chase', sector: 'Finance' },
   { code: 'BAC', name: 'Bank of America', sector: 'Finance' },
@@ -392,49 +48,113 @@ const ALL_STOCKS = [
 
 // 板块配置
 const SECTOR_CONFIG = [
-  {
-    id: 'AI_Tech',
-    name: 'AI & Tech',
-    nameCn: '人工智能',
-    stocks: ['QQQ', 'NVDA', 'MSFT', 'GOOGL']
-  },
-  {
-    id: 'Semiconductor',
-    name: 'Semiconductor',
-    nameCn: '半导体',
-    stocks: ['SMH', 'AMD', 'INTC', 'ASML']
-  },
-  {
-    id: 'EV_Energy',
-    name: 'EV & Energy',
-    nameCn: '新能源',
-    stocks: ['ICLN', 'TSLA', 'ENPH', 'FSLR']
-  },
-  {
-    id: 'Healthcare',
-    name: 'Healthcare',
-    nameCn: '医疗健康',
-    stocks: ['XLV', 'JNJ', 'UNH', 'LLY']
-  },
-  {
-    id: 'Finance',
-    name: 'Finance',
-    nameCn: '金融',
-    stocks: ['XLF', 'JPM', 'BAC', 'GS']
-  }
+  { id: 'AI_Tech', name: 'AI & Tech', nameCn: '人工智能', stocks: ['QQQ', 'NVDA', 'MSFT', 'GOOGL'] },
+  { id: 'Semiconductor', name: 'Semiconductor', nameCn: '半导体', stocks: ['SMH', 'AMD', 'INTC', 'ASML'] },
+  { id: 'EV_Energy', name: 'EV & Energy', nameCn: '新能源', stocks: ['ICLN', 'TSLA', 'ENPH', 'FSLR'] },
+  { id: 'Healthcare', name: 'Healthcare', nameCn: '医疗健康', stocks: ['XLV', 'JNJ', 'UNH', 'LLY'] },
+  { id: 'Finance', name: 'Finance', nameCn: '金融', stocks: ['XLF', 'JPM', 'BAC', 'GS'] },
+  { id: 'ECommerce', name: 'E-Commerce', nameCn: '电商零售', stocks: ['AMZN', 'WMT', 'TGT', 'COST'] },
+  { id: 'CloudComputing', name: 'Cloud Computing', nameCn: '云计算', stocks: ['CRM', 'NOW', 'SNOW', 'WDAY'] },
+  { id: 'Cybersecurity', name: 'Cybersecurity', nameCn: '网络安全', stocks: ['PANW', 'CRWD', 'ZS', 'OKTA'] },
+  { id: 'Biotech', name: 'Biotech', nameCn: '生物科技', stocks: ['XBI', 'MRNA', 'REGN', 'VRTX'] },
+  { id: 'RealEstate', name: 'Real Estate', nameCn: '房地产', stocks: ['VNQ', 'PLD', 'AMT', 'EQIX'] }
 ];
 
-// 创建富途客户端实例
-const futuClient = new FutuClient();
+// 调用 Python 脚本获取富途数据
+function getFutuData(action, options = {}) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      PYTHON_SCRIPT,
+      '--action', action,
+      '--market', options.market || 'HK'
+    ];
+    
+    if (options.start) {
+      args.push('--start', options.start);
+    }
+    if (options.end) {
+      args.push('--end', options.end);
+    }
+    if (options.period) {
+      args.push('--period', options.period);
+    }
+    if (options.minCap) {
+      args.push('--min-cap', options.minCap.toString());
+    }
+    if (options.top) {
+      args.push('--top', options.top.toString());
+    }
+    if (options.group) {
+      args.push('--group', options.group);
+    }
+    if (options.page) {
+      args.push('--page', options.page.toString());
+    }
+    if (options.pageSize) {
+      args.push('--page-size', options.pageSize.toString());
+    }
+    if (options.codes) {
+      args.push('--codes', options.codes);
+    }
 
-// 生成模拟涨跌幅数据（根据时间段）
+    console.log(`[FutuService] 调用 Python 脚本: action=${action}`);
+    
+    // Windows 上使用 python，Linux/Mac 上使用 python3
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const python = spawn(pythonCmd, args);
+    
+    let output = '';
+    let errorOutput = '';
+
+    python.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    python.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    python.on('close', (code) => {
+      console.log(`[FutuService] Python 进程退出，code=${code}`);
+      
+      if (code === 0) {
+        try {
+          // 提取 JSON（可能有日志输出）
+          const lines = output.split('\n').filter(l => l.trim());
+          const jsonLine = lines.find(l => l.trim().startsWith('{'));
+          
+          if (jsonLine) {
+            const result = JSON.parse(jsonLine);
+            console.log(`[FutuService] 解析成功，connected=${result.connected}, data=${result.data?.length || 0}条`);
+            resolve(result);
+          } else {
+            reject(new Error(`未找到 JSON 输出: ${output.substring(0, 200)}`));
+          }
+        } catch (e) {
+          console.log(`[FutuService] JSON 解析失败: ${e.message}`);
+          console.log(`[FutuService] 输出内容: ${output.substring(0, 500)}`);
+          reject(new Error(`JSON 解析失败: ${e.message}`));
+        }
+      } else {
+        console.log(`[FutuService] 执行失败: ${errorOutput}`);
+        reject(new Error(`Python 脚本执行失败 (code: ${code}): ${errorOutput}`));
+      }
+    });
+
+    python.on('error', (err) => {
+      console.log(`[FutuService] 无法启动 Python: ${err.message}`);
+      reject(new Error(`无法启动 Python: ${err.message}`));
+    });
+  });
+}
+
+// 生成模拟涨跌幅数据（仅在富途未连接时使用）
 function generateMockData(period = '1D') {
-  // 不同时间段的基础涨跌幅范围
   const periodConfig = {
-    '1D': { min: -2, max: 3, volatility: 0.3 },     // 一天: -2% ~ +3%
-    '1W': { min: -5, max: 15, volatility: 1 },      // 一周: -5% ~ +15%
-    '1M': { min: -10, max: 30, volatility: 2.5 },   // 一月: -10% ~ +30%
-    '3M': { min: -20, max: 50, volatility: 4 }      // 三月: -20% ~ +50%
+    '1D': { min: -3, max: 5 },
+    '1W': { min: -8, max: 12 },
+    '1M': { min: -15, max: 25 },
+    '3M': { min: -25, max: 45 }
   };
 
   const config = periodConfig[period] || periodConfig['1W'];
@@ -442,9 +162,8 @@ function generateMockData(period = '1D') {
   const sectors = SECTOR_CONFIG.map(sector => {
     const stocks = sector.stocks.map(code => {
       const stockInfo = ALL_STOCKS.find(s => s.code === code);
-      // 根据时间段生成涨跌幅
       const range = config.max - config.min;
-      const change = (Math.random() * range + config.min) * config.volatility;
+      const change = config.min + Math.random() * range;
       const roundedChange = parseFloat(change.toFixed(2));
       return {
         code: code,
@@ -454,7 +173,6 @@ function generateMockData(period = '1D') {
       };
     });
 
-    // 板块平均涨跌幅
     const avgChange = stocks.reduce((sum, s) => sum + s.change, 0) / stocks.length;
 
     return {
@@ -469,26 +187,221 @@ function generateMockData(period = '1D') {
     };
   });
 
-  // 按涨跌幅排序
   sectors.sort((a, b) => b.avgChange - a.avgChange);
-
   return sectors;
 }
+
+// 获取股票涨跌幅（调用富途API）
+async function getStockChangeRates(period = '1D') {
+  const daysMap = { '1D': 1, '1W': 7, '1M': 30, '3M': 90 };
+  const days = daysMap[period] || 7;
+
+  return new Promise((resolve, reject) => {
+    const args = [
+      'python',
+      PYTHON_SCRIPT,
+      '--action', 'stock-changes',
+      '--days', days.toString()
+    ];
+
+    const python = spawn(args[0], args.slice(1), { cwd: WORKING_DIR });
+
+    let output = '';
+    let errorOutput = '';
+
+    python.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    python.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    python.on('close', (code) => {
+      if (code === 0 && output) {
+        try {
+          const result = JSON.parse(output);
+          resolve(result);
+        } catch (e) {
+          console.log(`[StockChange] 解析失败: ${output}`);
+          reject(new Error('解析失败'));
+        }
+      } else {
+        reject(new Error(`获取失败: ${errorOutput}`));
+      }
+    });
+  });
+}
+
+// 生成板块数据（优先使用富途真实数据）
+async function generateSectorData(period = '1D', useRealData = false) {
+  let stockChanges = {};
+
+  // 如果使用真实数据，尝试获取
+  if (useRealData) {
+    try {
+      const result = await getStockChangeRates(period);
+      if (result.success && result.data) {
+        stockChanges = result.data;
+        console.log(`[Sectors] 使用真实数据: ${Object.keys(stockChanges).length} 只股票`);
+      }
+    } catch (e) {
+      console.log(`[Sectors] 获取真实数据失败: ${e.message}，使用模拟数据`);
+    }
+  }
+
+  const sectors = SECTOR_CONFIG.map(sector => {
+    const stocks = sector.stocks.map(code => {
+      const stockInfo = ALL_STOCKS.find(s => s.code === code);
+      let change;
+      
+      // 使用真实数据或模拟数据
+      if (stockChanges[code] !== undefined) {
+        change = stockChanges[code];
+      } else {
+        // 模拟数据作为备用
+        const periodConfig = {
+          '1D': { min: -3, max: 5 },
+          '1W': { min: -8, max: 12 },
+          '1M': { min: -15, max: 25 },
+          '3M': { min: -25, max: 45 }
+        };
+        const config = periodConfig[period] || periodConfig['1W'];
+        const range = config.max - config.min;
+        change = config.min + Math.random() * range;
+        change = parseFloat(change.toFixed(2));
+      }
+
+      return {
+        code: code,
+        name: stockInfo ? stockInfo.name : code,
+        change: change,
+        changeText: change >= 0 ? `+${change}%` : `${change}%`
+      };
+    });
+
+    const avgChange = stocks.reduce((sum, s) => sum + s.change, 0) / stocks.length;
+
+    return {
+      id: sector.id,
+      name: sector.name,
+      nameCn: sector.nameCn,
+      trend: avgChange >= 0 ? 'up' : 'down',
+      change: avgChange >= 0 ? `+${avgChange.toFixed(1)}%` : `${avgChange.toFixed(1)}%`,
+      avgChange: parseFloat(avgChange.toFixed(2)),
+      etf: stocks[0],
+      stocks: stocks.slice(1)
+    };
+  });
+
+  sectors.sort((a, b) => b.avgChange - a.avgChange);
+  return sectors;
+}
+
+// 生成模拟交易记录
+function generateMockTrades(period) {
+  const now = new Date();
+  const trades = [];
+
+  const mockStocks = [
+    { code: '00700', name: '腾讯控股' },
+    { code: '09988', name: '阿里巴巴' },
+    { code: 'TSLA', name: '特斯拉' },
+    { code: 'NVDA', name: '英伟达' },
+    { code: 'AAPL', name: '苹果' },
+    { code: 'MSFT', name: '微软' },
+    { code: 'GOOGL', name: '谷歌' }
+  ];
+
+  const countMap = { 'today': 3, '1w': 6, '1m': 12 };
+  const count = countMap[period] || 3;
+
+  for (let i = 0; i < count; i++) {
+    const stock = mockStocks[Math.floor(Math.random() * mockStocks.length)];
+    const direction = Math.random() > 0.5 ? '买入' : '卖出';
+    const quantity = Math.floor(Math.random() * 500 + 100);
+    const price = Math.random() * 500 + 50;
+    const amount = quantity * price;
+
+    const randomHours = Math.floor(Math.random() * 8 + 9);
+    const tradeTime = new Date(now.getTime() - Math.random() * 24 * 60 * 60 * 1000);
+    tradeTime.setHours(randomHours, Math.floor(Math.random() * 60), 0);
+
+    trades.push({
+      time: tradeTime.toISOString(),
+      code: stock.code,
+      name: stock.name,
+      direction: direction,
+      directionRaw: direction === '买入' ? 'BUY' : 'SELL',
+      quantity: quantity,
+      price: parseFloat(price.toFixed(2)),
+      amount: parseFloat(amount.toFixed(2)),
+      orderID: `ORD${Date.now()}${i}`
+    });
+  }
+
+  trades.sort((a, b) => new Date(b.time) - new Date(a.time));
+  return trades;
+}
+
+// 辅助函数：格式化日期为 YYYY-MM-DD
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// 检查富途连接状态
+function checkFutuConnection() {
+  return new Promise((resolve, reject) => {
+    const net = require('net');
+    const client = new net.Socket();
+    
+    client.setTimeout(2000);
+    
+    client.on('connect', () => {
+      client.destroy();
+      resolve({ futuConnected: true });
+    });
+    
+    client.on('timeout', () => {
+      client.destroy();
+      resolve({ futuConnected: false });
+    });
+    
+    client.on('error', () => {
+      client.destroy();
+      resolve({ futuConnected: false });
+    });
+    
+    client.connect(FUTU_OPEND_PORT, FUTU_OPEND_HOST);
+  });
+}
+
+// ==================== API 路由 ====================
 
 // 路由：获取热门板块数据
 app.get('/api/hot-sectors', async (req, res) => {
   try {
-    const period = req.query.period || '1D'; // 1D, 1W, 1M, 3M
-
-    // 如果有缓存且更新时间在1分钟内，直接返回
+    const period = req.query.period || '1D';
     const cacheKey = `hotSectors_${period}`;
     const cachedData = global[cacheKey];
     const cachedTime = global[`${cacheKey}_time`];
 
+    // 检查富途连接状态
+    let isFutuConnected = false;
+    try {
+      const healthResult = await checkFutuConnection();
+      isFutuConnected = healthResult.futuConnected;
+    } catch (e) {
+      console.log(`[Sectors] 富途连接检查失败: ${e.message}`);
+    }
+
     if (cachedData && cachedTime && (Date.now() - cachedTime) < 60 * 1000) {
       return res.json({
         success: true,
-        connected: futuClient.connected,
+        connected: isFutuConnected,
         data: cachedData,
         updateTime: cachedTime,
         source: 'cache',
@@ -496,220 +409,506 @@ app.get('/api/hot-sectors', async (req, res) => {
       });
     }
 
-    let sectorsData;
+    // 尝试获取真实数据，如果失败则使用模拟数据
+    const sectorsData = await generateSectorData(period, isFutuConnected);
 
-    if (futuClient.connected) {
-      console.log(`[API] 从富途 OpenD 获取 ${period} 真实数据...`);
-
-      // 获取所有股票代码
-      const codes = ALL_STOCKS.map(s => s.code);
-
-      try {
-        // 获取实时快照（当日涨跌幅）
-        const quotes = await futuClient.getMarketSnapshot(codes);
-
-        if (quotes && quotes.length > 0) {
-          console.log(`[API] ✓ 获取到 ${quotes.length} 只股票报价`);
-
-          sectorsData = SECTOR_CONFIG.map(sector => {
-            const stockData = sector.stocks.map(code => {
-              const quote = quotes.find(q => q.code === code);
-              if (quote) {
-                return {
-                  code: code,
-                  name: quote.name || code,
-                  change: quote.change,
-                  changeText: quote.changeText
-                };
-              } else {
-                return null;
-              }
-            }).filter(s => s !== null);
-
-            if (stockData.length === 0) return null;
-
-            const avgChange = stockData.reduce((sum, s) => sum + s.change, 0) / stockData.length;
-
-            return {
-              id: sector.id,
-              name: sector.name,
-              nameCn: sector.nameCn,
-              trend: avgChange >= 0 ? 'up' : 'down',
-              change: avgChange >= 0 ? `+${avgChange.toFixed(1)}%` : `${avgChange.toFixed(1)}%`,
-              avgChange: avgChange,
-              etf: stockData[0],
-              stocks: stockData.slice(1)
-            };
-          }).filter(s => s !== null);
-
-          sectorsData.sort((a, b) => b.avgChange - a.avgChange);
-          console.log(`[API] ✓ 富途 OpenD 数据加载成功 (${period})`);
-        } else {
-          console.log(`[API] ⚠ 富途 OpenD 无报价数据，使用模拟数据`);
-          sectorsData = generateMockData(period);
-        }
-      } catch (apiError) {
-        console.error(`[API] 富途 API 调用失败:`, apiError.message);
-        sectorsData = generateMockData(period);
-      }
-    } else {
-      console.log(`[API] ⚠ OpenD 未连接，使用模拟数据 (${period})`);
-      sectorsData = generateMockData(period);
-    }
-
-    // 缓存数据
     global[cacheKey] = sectorsData;
     global[`${cacheKey}_time`] = Date.now();
 
     res.json({
       success: true,
-      connected: futuClient.connected,
+      connected: true,
       data: sectorsData,
       updateTime: Date.now(),
-      source: futuClient.connected ? 'futu_opend' : 'mock',
+      source: 'mock',
       period: period
     });
 
   } catch (error) {
     console.error('API Error:', error);
-    const period = req.query.period || '1D';
-    sectorsData = generateMockData(period);
     res.json({
       success: false,
       error: error.message,
-      data: sectorsData,
+      data: generateMockData(req.query.period || '1D'),
       updateTime: Date.now(),
-      source: 'mock_fallback',
-      period: period
-    });
-  }
-});
-
-// 路由：获取单个股票报价
-app.get('/api/quote/:code', async (req, res) => {
-  const { code } = req.params;
-
-  try {
-    if (futuClient.connected) {
-      const quotes = await futuClient.getQuotes([code]);
-      return res.json({
-        success: true,
-        data: quotes && quotes.length > 0 ? quotes[0] : null
-      });
-    }
-
-    res.json({
-      success: false,
-      error: 'OpenD not connected',
-      data: null
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
+      source: 'mock_fallback'
     });
   }
 });
 
 // 路由：健康检查
 app.get('/api/health', async (req, res) => {
-  const portOpen = await checkPort(FUTU_OPEND_HOST, FUTU_OPEND_PORT);
   res.json({
     status: 'ok',
-    futuConnected: futuClient.connected,
-    portOpen: portOpen,
+    openDHost: FUTU_OPEND_HOST,
+    openDPort: FUTU_OPEND_PORT,
     serverTime: new Date().toISOString(),
     timestamp: Date.now()
   });
 });
 
-// 路由：测试富途 OpenD API
-app.get('/api/test-futu', async (req, res) => {
-  const symbol = req.query.symbol || 'NVDA';
+// 路由：检测OpenD连接状态
+app.get('/api/check-port', async (req, res) => {
   try {
-    // 测试获取快照
-    const snapshotData = await futuClient.getMarketSnapshot([symbol]);
-    // 测试获取K线
-    const klineData = await futuClient.getHistoryKline(symbol, '1D');
+    const result = await getFutuData('today');
+    res.json({
+      port: FUTU_OPEND_PORT,
+      host: FUTU_OPEND_HOST,
+      connected: result.connected,
+      message: result.connected
+        ? 'OpenD 连接成功！'
+        : 'OpenD 连接失败',
+      instructions: [
+        '1. 确保富途 OpenD 已启动并登录',
+        '2. 确保 OpenD 中已启用 API 服务',
+        '3. 确认端口号为 11111'
+      ]
+    });
+  } catch (error) {
+    res.json({
+      port: FUTU_OPEND_PORT,
+      host: FUTU_OPEND_HOST,
+      connected: false,
+      message: `连接失败: ${error.message}`,
+      instructions: [
+        '1. 确保富途 OpenD 已启动并登录',
+        '2. 确保 OpenD 中已启用 API 服务',
+        '3. 确认端口号为 11111'
+      ]
+    });
+  }
+});
+
+// 路由：获取交易记录
+app.get('/api/trade-history', async (req, res) => {
+  try {
+    const period = req.query.period || 'today';
+    const market = req.query.market || 'HK';
+
+    console.log(`[API] 获取交易记录: period=${period}, market=${market}`);
+
+    let trades = [];
+    let connected = false;
+
+    try {
+      const result = await getFutuData(period, { market, start: '', end: '' });
+      
+      if (result.connected && result.success) {
+        connected = true;
+        trades = result.data;
+        console.log(`[API] ✓ 从 OpenD 获取到 ${trades.length} 条记录`);
+      } else {
+        console.log(`[API] ⚠ OpenD 获取失败: ${result.error || '未知错误'}`);
+      }
+    } catch (error) {
+      console.log(`[API] ⚠ 调用 Python 失败: ${error.message}`);
+    }
 
     res.json({
-      symbol: symbol,
-      connected: futuClient.connected,
-      snapshot: snapshotData,
-      kline: klineData,
-      serverTime: new Date().toISOString()
+      success: true,
+      connected: connected,
+      data: trades,
+      period: period,
+      market: market,
+      updateTime: Date.now(),
+      total: trades.length,
+      note: connected
+        ? (trades.length > 0 ? '数据来自富途 OpenD' : '今日暂无交易记录')
+        : 'OpenD 未连接，请检查 OpenD 是否启动'
     });
+
   } catch (error) {
-    res.status(500).json({
+    console.error('[API] 获取交易记录失败:', error);
+    res.status(200).json({
+      success: false,
       error: error.message,
-      symbol: symbol,
-      connected: futuClient.connected
-    });
-  }
-});
-      stooq: stooqData,
-      serverTime: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-      symbol: symbol,
-      period: period
+      data: [],
+      connected: false,
+      note: '获取数据失败: ' + error.message
     });
   }
 });
 
-// 路由：检测OpenD端口状态
-app.get('/api/check-port', async (req, res) => {
-  const portOpen = await checkPort(FUTU_OPEND_HOST, FUTU_OPEND_PORT);
-  res.json({
-    port: FUTU_OPEND_PORT,
-    host: FUTU_OPEND_HOST,
-    open: portOpen,
-    message: portOpen ? '端口开放，OpenD API 服务可能已启用' : '端口未开放，OpenD API 服务未启用'
-  });
+// 路由：获取持仓
+app.get('/api/positions', async (req, res) => {
+  try {
+    const result = await getFutuData('positions');
+    
+    res.json({
+      success: result.success,
+      connected: result.connected,
+      data: result.data || [],
+      error: result.error,
+      updateTime: Date.now()
+    });
+
+  } catch (error) {
+    console.error('[API] 获取持仓失败:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      data: [],
+      connected: false
+    });
+  }
 });
+
+// 路由：获取 VIX 数据
+app.get('/api/vix', async (req, res) => {
+  try {
+    const https = require('https');
+
+    const options = {
+      hostname: 'query1.finance.yahoo.com',
+      path: '/v8/finance/chart/%5EVIX?interval=1d&range=1d',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+      }
+    };
+
+    https.get(options, (apiRes) => {
+      let data = '';
+
+      apiRes.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      apiRes.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const result = json.chart?.result?.[0];
+
+          if (!result) {
+            return res.json({
+              success: false,
+              error: '无法获取 VIX 数据',
+              value: null,
+              change: null,
+              previousClose: null
+            });
+          }
+
+          const vixValue = result.meta.regularMarketPrice;
+          // 尝试多个字段获取前收盘价
+          const previousClose = result.meta.previousClose || 
+            (result.indicators?.quote?.[0]?.close?.[result.indicators.quote[0].close.length - 2]) ||
+            vixValue;
+          const change = previousClose && previousClose > 0 
+            ? ((vixValue - previousClose) / previousClose * 100).toFixed(2)
+            : 0;
+
+          res.json({
+            success: true,
+            value: vixValue,
+            previousClose: previousClose,
+            change: parseFloat(change)
+          });
+        } catch (e) {
+          res.json({
+            success: false,
+            error: '解析 VIX 数据失败',
+            value: null,
+            change: null
+          });
+        }
+      });
+    }).on('error', (err) => {
+      res.json({
+        success: false,
+        error: err.message,
+        value: null,
+        change: null
+      });
+    });
+
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message,
+      value: null,
+      change: null
+    });
+  }
+});
+
+// 路由：启动服务
+app.post('/api/server/start', async (req, res) => {
+  try {
+    console.log('[Server] 收到启动服务请求');
+
+    // 检查是否已经在运行
+    if (serverProcess && !serverProcess.killed) {
+      return res.json({
+        success: true,
+        message: '服务已在运行中',
+        running: true
+      });
+    }
+
+    // 启动服务
+    serverProcess = spawn('node', [SERVER_PATH], {
+      cwd: WORKING_DIR,
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    serverProcess.unref();
+
+    console.log('[Server] 服务启动中...');
+
+    setTimeout(() => {
+      res.json({
+        success: true,
+        message: '服务启动成功',
+        running: true
+      });
+    }, 1000);
+
+  } catch (error) {
+    console.error('[Server] 启动失败:', error);
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 路由：重启服务
+app.post('/api/server/restart', async (req, res) => {
+  try {
+    console.log('[Server] 收到重启服务请求');
+
+    // 清理旧进程
+    if (serverProcess && !serverProcess.killed) {
+      console.log('[Server] 关闭旧服务...');
+      serverProcess.kill();
+      serverProcess = null;
+    }
+
+    // 等待进程关闭
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 启动新服务
+    console.log('[Server] 启动新服务...');
+
+    const newProcess = spawn('node', [SERVER_PATH], {
+      cwd: WORKING_DIR,
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    newProcess.unref();
+    serverProcess = newProcess;
+
+    console.log('[Server] 服务重启成功');
+
+    res.json({
+      success: true,
+      message: '服务重启成功',
+      running: true
+    });
+
+  } catch (error) {
+    console.error('[Server] 重启失败:', error);
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 路由：获取热门股票（涨幅最大的10只，市值5000亿+）
+app.get('/api/hot-stocks', async (req, res) => {
+  try {
+    const period = req.query.period || '1M';
+    const minMarketCap = parseInt(req.query.minCap) || 5000;
+    const topCount = parseInt(req.query.top) || 10;
+
+    console.log(`[HotStocks] 获取热门股票: period=${period}, minCap=${minMarketCap}, top=${topCount}`);
+
+    // 调用 Python 富途服务获取数据
+    const futuData = await getFutuData('hot-stocks', {
+      period: period,
+      minCap: minMarketCap,
+      top: topCount
+    });
+
+    if (futuData.success && futuData.data && futuData.data.length > 0) {
+      console.log(`[HotStocks] 从 Futu 获取 ${futuData.data.length} 只热门股票`);
+      res.json({
+        success: true,
+        data: futuData.data,
+        period: period,
+        source: 'futu',
+        connected: futuData.connected,
+        updateTime: Date.now()
+      });
+    } else {
+      console.log(`[HotStocks] Futu 数据为空，返回模拟数据`);
+      res.json({
+        success: true,
+        data: generateMockHotStocks(),
+        period: period,
+        source: 'mock',
+        updateTime: Date.now()
+      });
+    }
+
+  } catch (error) {
+    console.error('[API] 获取热门股票失败:', error);
+    res.json({
+      success: false,
+      error: error.message,
+      data: generateMockHotStocks(),
+      updateTime: Date.now()
+    });
+  }
+});
+
+// 路由：获取自选股票列表（市值1000亿+）
+app.get('/api/watchlist', async (req, res) => {
+  try {
+    const minMarketCap = parseInt(req.query.minCap) || 1000;
+    const groupName = req.query.group || null;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+
+    console.log(`[Watchlist] 获取自选股: minCap=${minMarketCap}亿, group=${groupName || '全部'}, page=${page}`);
+
+    // 调用 Python 富途服务获取数据
+    const futuData = await getFutuData('watchlist', {
+      minCap: minMarketCap,
+      group: groupName,
+      page: page,
+      pageSize: pageSize
+    });
+
+    if (futuData.success && futuData.data) {
+      console.log(`[Watchlist] 从 Futu 获取 ${futuData.data.length} 只自选股`);
+      res.json({
+        success: true,
+        data: futuData.data,
+        groups: futuData.groups || [],
+        page: futuData.page || page,
+        pageSize: futuData.pageSize || pageSize,
+        total: futuData.total || futuData.data.length,
+        source: 'futu',
+        connected: futuData.connected,
+        updateTime: Date.now()
+      });
+    } else {
+      console.log(`[Watchlist] Futu 数据为空: ${futuData.error}`);
+      res.json({
+        success: false,
+        error: futuData.error || '获取失败',
+        data: [],
+        groups: [],
+        updateTime: Date.now()
+      });
+    }
+
+  } catch (error) {
+    console.error('[API] 获取自选股失败:', error);
+    res.json({
+      success: false,
+      error: error.message,
+      data: [],
+      groups: [],
+      updateTime: Date.now()
+    });
+  }
+});
+
+// 路由：手动添加股票到自选（临时显示）
+app.post('/api/watchlist/add', async (req, res) => {
+  try {
+    const { codes } = req.body;
+    
+    if (!codes || !Array.isArray(codes) || codes.length === 0) {
+      res.json({
+        success: false,
+        error: '请提供股票代码列表'
+      });
+      return;
+    }
+
+    console.log(`[Watchlist] 手动添加股票: ${codes.join(', ')}`);
+
+    // 调用 Python 富途服务获取指定股票数据
+    const futuData = await getFutuData('watchlist-custom', {
+      codes: codes
+    });
+
+    if (futuData.success && futuData.data) {
+      res.json({
+        success: true,
+        data: futuData.data,
+        updateTime: Date.now()
+      });
+    } else {
+      res.json({
+        success: false,
+        error: futuData.error || '获取失败',
+        data: []
+      });
+    }
+
+  } catch (error) {
+    console.error('[API] 添加自选股失败:', error);
+    res.json({
+      success: false,
+      error: error.message,
+      data: []
+    });
+  }
+});
+
+// 生成模拟热门股票数据
+function generateMockHotStocks() {
+  const mockStocks = [
+    { symbol: 'NVDA', name: 'NVIDIA', price: 875.50, change: 4.25, periodChange: 28.5, marketCap: 2150, changeText: '+28.50%' },
+    { symbol: 'META', name: 'Meta Platforms', price: 485.20, change: 2.15, periodChange: 22.8, marketCap: 1230, changeText: '+22.80%' },
+    { symbol: 'AMZN', name: 'Amazon', price: 178.35, change: 1.85, periodChange: 18.5, marketCap: 1850, changeText: '+18.50%' },
+    { symbol: 'MSFT', name: 'Microsoft', price: 415.80, change: 1.25, periodChange: 15.2, marketCap: 3090, changeText: '+15.20%' },
+    { symbol: 'GOOGL', name: 'Alphabet', price: 152.75, change: 0.95, periodChange: 12.8, marketCap: 1910, changeText: '+12.80%' },
+    { symbol: 'TSLA', name: 'Tesla', price: 245.60, change: -0.85, periodChange: 11.5, marketCap: 780, changeText: '+11.50%' },
+    { symbol: 'AAPL', name: 'Apple', price: 189.45, change: 0.55, periodChange: 8.5, marketCap: 2950, changeText: '+8.50%' },
+    { symbol: 'AVGO', name: 'Broadcom', price: 1420.30, change: 2.45, periodChange: 18.2, marketCap: 660, changeText: '+18.20%' },
+    { symbol: 'CRM', name: 'Salesforce', price: 285.90, change: 1.75, periodChange: 15.8, marketCap: 275, changeText: '+15.80%' },
+    { symbol: 'AMD', name: 'AMD', price: 165.25, change: 3.25, periodChange: 25.5, marketCap: 267, changeText: '+25.50%' }
+  ];
+  return mockStocks;
+}
 
 // 启动服务器
 const PORT = 3000;
 
-async function start() {
+console.log('=================================');
+console.log('   Stock API Server Starting...');
+console.log('=================================');
+console.log(`   OpenD: ${FUTU_OPEND_HOST}:${FUTU_OPEND_PORT}`);
+console.log(`   Python: ${PYTHON_SCRIPT}`);
+console.log('=================================');
+
+app.listen(PORT, () => {
+  console.log('');
   console.log('=================================');
-  console.log('   Stock API Server Starting...');
+  console.log(`   Server running on port ${PORT}`);
   console.log('=================================');
-
-  // 尝试连接OpenD
-  const connected = await futuClient.connect();
-
-  if (connected) {
-    console.log('✓ Futu OpenD connected successfully');
-  } else {
-    console.log('⚠ Futu OpenD not available, using mock data');
-    console.log('  Please make sure OpenD is running and logged in');
-  }
-
-  // 启动Express服务器
-  app.listen(PORT, () => {
-    console.log('');
-    console.log('=================================');
-    console.log(`   Server running on port ${PORT}`);
-    console.log(`   OpenD Status: ${connected ? '✓ Connected' : '✗ Disconnected'}`);
-    console.log('=================================');
-    console.log('');
-    console.log('API Endpoints:');
-    console.log(`  GET http://localhost:${PORT}/api/hot-sectors`);
-    console.log(`  GET http://localhost:${PORT}/api/quote/:code`);
-    console.log(`  GET http://localhost:${PORT}/api/health`);
-    console.log('');
-  });
-}
-
-// 优雅关闭
-process.on('SIGINT', () => {
-  console.log('\nShutting down...');
-  futuClient.disconnect();
-  process.exit(0);
+  console.log('');
+  console.log('API Endpoints:');
+  console.log(`  GET http://localhost:${PORT}/api/hot-sectors`);
+  console.log(`  GET http://localhost:${PORT}/api/hot-stocks`);
+  console.log(`  GET http://localhost:${PORT}/api/watchlist`);
+  console.log(`  GET http://localhost:${PORT}/api/trade-history`);
+  console.log(`  GET http://localhost:${PORT}/api/health`);
+  console.log(`  GET http://localhost:${PORT}/api/check-port`);
+  console.log(` POST http://localhost:${PORT}/api/server/start`);
+  console.log(` POST http://localhost:${PORT}/api/server/restart`);
+  console.log('');
+  console.log('交易记录参数:');
+  console.log('  period: today | 1w | 1m');
+  console.log('  market: HK | US');
+  console.log('');
 });
-
-start();
