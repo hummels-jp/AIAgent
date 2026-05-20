@@ -3142,13 +3142,44 @@
       return combinedAnalysis;
     }
 
-    // 获取数据
+    // 获取数据（优先使用 CNN 官方 API，失败则使用 Alternative.me）
     async function fetchData(showLoading = false) {
       if (showLoading) {
         loadingOverlay.classList.add('active');
       }
       refreshBtn.classList.add('loading');
 
+      try {
+        // 首先尝试 CNN 官方 API
+        const cnnResponse = await fetch('http://localhost:3000/api/fear-and-greed');
+        const cnnData = await cnnResponse.json();
+
+        if (cnnData.success) {
+          // 使用 CNN 数据
+          updateUI({
+            value: cnnData.value,
+            value_classification: getCNNClassification(cnnData.value),
+            change: cnnData.change,
+            timestamp: cnnData.timestamp
+          });
+          updateDataSource('cnn');
+          errorMessage.style.display = 'none';
+        } else {
+          // CNN 失败，使用 Alternative.me
+          await fetchAlternativeData();
+        }
+      } catch (cnnError) {
+        // CNN API 不可用，使用 Alternative.me
+        console.warn('CNN API 不可用，使用 Alternative.me:', cnnError);
+        await fetchAlternativeData();
+      } finally {
+        refreshBtn.classList.remove('loading');
+        loadingOverlay.classList.remove('active');
+      }
+    }
+
+    // 获取 Alternative.me 数据（备用）
+    async function fetchAlternativeData() {
       try {
         const response = await fetch(API_URL);
         if (!response.ok) {
@@ -3159,6 +3190,7 @@
 
         if (data.data && data.data.length > 0) {
           updateUI(data.data[0]);
+          updateDataSource('alternative');
         } else {
           throw new Error('数据格式错误');
         }
@@ -3169,9 +3201,29 @@
         errorMessage.style.display = 'block';
         document.getElementById('errorText').textContent = 
           `加载失败: ${error.message}，请稍后重试`;
-      } finally {
-        refreshBtn.classList.remove('loading');
-        loadingOverlay.classList.remove('active');
+      }
+    }
+
+    // 根据 CNN 分数获取分类
+    function getCNNClassification(score) {
+      if (score <= 25) return 'Extreme Fear';
+      if (score <= 45) return 'Fear';
+      if (score <= 55) return 'Neutral';
+      if (score <= 75) return 'Greed';
+      return 'Extreme Greed';
+    }
+
+    // 更新数据来源显示
+    function updateDataSource(source) {
+      const badge = document.getElementById('dataSourceBadge');
+      if (badge) {
+        if (source === 'cnn') {
+          badge.textContent = 'CNN 官方';
+          badge.style.background = 'var(--greed)';
+        } else {
+          badge.textContent = 'Alternative.me';
+          badge.style.background = 'var(--neutral)';
+        }
       }
     }
 

@@ -553,6 +553,143 @@ app.get('/api/positions', async (req, res) => {
   }
 });
 
+// 路由：获取 CNN 恐慌指数（从 CNN 官网爬取）
+app.get('/api/fear-and-greed', async (req, res) => {
+  try {
+    const https = require('https');
+    
+    // CNN 恐慌指数数据 API（CNN Money 使用的后端接口）
+    const options = {
+      hostname: 'production-databrew-radio-air-mastering-1246.kxcdn.com',
+      path: '/fear-and-greed-v2-data/fear-and-greed-data.json',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Origin': 'https://edition.cnn.com',
+        'Referer': 'https://edition.cnn.com/markets/fear-and-greed'
+      }
+    };
+
+    https.get(options, (apiRes) => {
+      let data = '';
+
+      apiRes.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      apiRes.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          
+          // 解析 CNN 数据格式
+          const fearGreedData = json.data?.fearGreedData || {};
+          const value = fearGreedData.fearGreed || fearGreedData.score || 50;
+          const previousValue = fearGreedData.fearGreedPreviousClose || fearGreedData.previousScore || value;
+          const change = fearGreedData.fearGreedChange || (value - previousValue);
+          
+          res.json({
+            success: true,
+            source: 'cnn',
+            value: value,
+            previousValue: previousValue,
+            change: change,
+            timestamp: fearGreedData.lastUpdated || json.lastUpdated || Date.now(),
+            rating: fearGreedData.fearGreedRating || 'Neutral'
+          });
+        } catch (e) {
+          // 尝试备用方法：从 CNN 页面 HTML 提取数据
+          tryAlternativeCNNData(req, res);
+        }
+      });
+    }).on('error', () => {
+      // 尝试备用方法
+      tryAlternativeCNNData(req, res);
+    });
+
+  } catch (error) {
+    // 如果所有方法都失败，返回错误让前端使用 Alternative.me
+    res.json({
+      success: false,
+      error: error.message,
+      fallback: 'alternative_me',
+      message: 'CNN 数据获取失败，将使用备用数据源'
+    });
+  }
+});
+
+// 备用方法：从 CNN 页面 HTML 提取数据
+async function tryAlternativeCNNData(req, res) {
+  try {
+    const https = require('https');
+    
+    const options = {
+      hostname: 'edition.cnn.com',
+      path: '/markets/fear-and-greed',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    };
+
+    https.get(options, (apiRes) => {
+      let data = '';
+
+      apiRes.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      apiRes.on('end', () => {
+        // 从 HTML 中提取恐慌指数
+        const scoreMatch = data.match(/fearGreed["\']?\s*:\s*(\d+)/i) ||
+                          data.match(/fear-greed-score["\']?\s*:\s*["\']?(\d+)/i) ||
+                          data.match(/"score"\s*:\s*(\d+)/i);
+        
+        if (scoreMatch) {
+          const value = parseInt(scoreMatch[1]);
+          res.json({
+            success: true,
+            source: 'cnn_html',
+            value: value,
+            previousValue: value,
+            change: 0,
+            timestamp: Date.now(),
+            rating: getRatingFromScore(value)
+          });
+        } else {
+          // 所有方法都失败
+          res.json({
+            success: false,
+            fallback: 'alternative_me',
+            message: '无法获取 CNN 数据'
+          });
+        }
+      });
+    }).on('error', () => {
+      res.json({
+        success: false,
+        fallback: 'alternative_me',
+        message: 'CNN 连接失败'
+      });
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      fallback: 'alternative_me',
+      message: error.message
+    });
+  }
+}
+
+// 根据分数获取评级
+function getRatingFromScore(score) {
+  if (score <= 25) return 'Extreme Fear';
+  if (score <= 45) return 'Fear';
+  if (score <= 55) return 'Neutral';
+  if (score <= 75) return 'Greed';
+  return 'Extreme Greed';
+}
+
 // 路由：获取 VIX 数据
 app.get('/api/vix', async (req, res) => {
   try {
@@ -898,6 +1035,7 @@ app.listen(PORT, () => {
   console.log('=================================');
   console.log('');
   console.log('API Endpoints:');
+  console.log(`  GET http://localhost:${PORT}/api/fear-and-greed`);
   console.log(`  GET http://localhost:${PORT}/api/hot-sectors`);
   console.log(`  GET http://localhost:${PORT}/api/hot-stocks`);
   console.log(`  GET http://localhost:${PORT}/api/watchlist`);
@@ -906,6 +1044,10 @@ app.listen(PORT, () => {
   console.log(`  GET http://localhost:${PORT}/api/check-port`);
   console.log(` POST http://localhost:${PORT}/api/server/start`);
   console.log(` POST http://localhost:${PORT}/api/server/restart`);
+  console.log('');
+  console.log('恐慌指数数据源:');
+  console.log('  - 主数据源: CNN 官方 Fear & Greed Index');
+  console.log('  - 备用数据源: Alternative.me (当 CNN 不可用时)');
   console.log('');
   console.log('交易记录参数:');
   console.log('  period: today | 1w | 1m');

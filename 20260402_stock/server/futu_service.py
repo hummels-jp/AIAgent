@@ -215,9 +215,34 @@ def get_stock_prices(codes):
         if ret == RET_OK and data is not None and len(data) > 0:
             for _, row in data.iterrows():
                 code = str(row.get('code', ''))
-                cur_price = float(row.get('cur_price', 0))
-                prev_close = float(row.get('prev_close_price', cur_price))
+                # 安全获取价格，避免 None 值导致 float() 失败
+                raw_cur_price = row.get('cur_price')
+                raw_prev_close = row.get('prev_close_price')
+                
+                # 处理 cur_price
+                if raw_cur_price is not None and raw_cur_price != '':
+                    try:
+                        cur_price = float(raw_cur_price)
+                    except:
+                        cur_price = 0
+                else:
+                    cur_price = 0
+                
+                # 处理 prev_close
+                if raw_prev_close is not None and raw_prev_close != '':
+                    try:
+                        prev_close = float(raw_prev_close)
+                    except:
+                        prev_close = 0
+                else:
+                    prev_close = 0
+                
+                # 如果 cur_price 为 0，尝试用 prev_close
+                if cur_price == 0 and prev_close > 0:
+                    cur_price = prev_close
+                
                 prices[code] = {'cur_price': cur_price, 'prev_close': prev_close}
+                print(f"[Price] {code}: cur_price={cur_price}, prev_close={prev_close}", file=sys.stderr)
         else:
             print(f"[Price] 获取失败: {data}", file=sys.stderr)
     except Exception as e:
@@ -261,37 +286,72 @@ def get_stock_change_rates(codes, days=1):
 
     return changes
 
+def get_position_prices():
+    """从持仓列表获取实时价格"""
+    HOST = '127.0.0.1'
+    PORT = 11111
+    prices = {}
+
+    try:
+        trade_ctx = OpenSecTradeContext(host=HOST, port=PORT)
+        ret, data = trade_ctx.position_list_query()
+        trade_ctx.close()
+
+        if ret == RET_OK and data is not None and len(data) > 0:
+            for _, row in data.iterrows():
+                code = str(row.get('code', ''))
+                qty = float(row.get('qty', 0))
+                market_val = float(row.get('market_val', 0))
+                if qty > 0 and market_val > 0:
+                    # 用市值/数量计算出实时价格
+                    prices[code] = market_val / qty
+                    print(f"[PositionPrice] {code}: 实时价={prices[code]:.2f}", file=sys.stderr)
+    except Exception as e:
+        print(f"[PositionPrice] 获取持仓价格失败: {e}", file=sys.stderr)
+
+    return prices
+
 def format_deal_list(df):
     """格式化成交记录"""
     if df is None or len(df) == 0:
         return []
 
-    # 先收集所有需要的股票代码（保持原始格式）
-    codes = df['code'].unique().tolist() if 'code' in df.columns else []
-
-    # 批量获取实时价格
-    prices = get_stock_prices(codes)
+    # 获取所有需要的股票代码
+    all_codes = df['code'].unique().tolist() if 'code' in df.columns else []
+    
+    # 从持仓列表获取实时价格
+    position_prices = get_position_prices()
+    print(f"[Trade] 从持仓获取 {len(position_prices)} 只股票的实时价格", file=sys.stderr)
+    
+    # 批量获取不在持仓中的股票的行情（昨收价格）
+    codes_to_fetch = [c for c in all_codes if c not in position_prices]
+    if codes_to_fetch:
+        quote_prices = get_stock_prices(codes_to_fetch)
+        print(f"[Trade] 从行情API获取 {len(quote_prices)} 只股票的价格", file=sys.stderr)
+    else:
+        quote_prices = {}
 
     result = []
     for _, row in df.iterrows():
         code = str(row.get('code', ''))
         deal_price = float(row.get('price', 0))
 
-        # 获取当前价格 - 尝试多种代码格式匹配
-        price_info = prices.get(code, {})
-        # 如果精确匹配失败，尝试模糊匹配
-        if not price_info:
-            for key, val in prices.items():
-                if code in key or key in code:
-                    price_info = val
-                    break
-
-        cur_price = price_info.get('cur_price', None) if price_info else None
-        prev_close = price_info.get('prev_close', None) if price_info else None
-
-        # 如果当前价格无效（0或None），使用昨收价格
+        # 优先从持仓获取实时价格
+        cur_price = position_prices.get(code, None)
+        prev_close = None
+        
+        # 如果持仓中没有，从行情API获取
+        if not cur_price:
+            price_info = quote_prices.get(code, {})
+            if price_info:
+                cur_price = price_info.get('cur_price')
+                prev_close = price_info.get('prev_close')
+        
+        # 如果都没有，使用操作价
         if not cur_price or cur_price == 0:
-            cur_price = prev_close
+            cur_price = deal_price
+            prev_close = None
+            print(f"[Trade] 警告: {code} 无实时价格，使用操作价代替", file=sys.stderr)
 
         # 计算相对于成交价的涨跌幅
         trade_change_percent = None
