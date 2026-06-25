@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>北京一日游攻略</title>
+  <style>
+    :root {
+      --bg: #f3ece0;
+      --paper: #fffcf5;
+      --ink: #1e1a14;
+      --muted: #6b5d4f;
+      --accent: #b03020;
+      --accent2: #1a5c48;
+      --accent3: #7a5c1e;
+      --line: rgba(30,26,20,.1);
+      --radius: 20px;
+      --shadow: 0 16px 48px rgba(80,40,10,.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Noto Serif SC", "Source Han Serif SC", "STSong", "SimSun", serif;
+      color: var(--ink);
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 8% 12%, rgba(176,48,32,.18) 0%, transparent 34%),
+        radial-gradient(ellipse at 90% 86%, rgba(26,92,72,.14) 0%, transparent 30%),
+        linear-gradient(150deg, #f0e6d0 0%, #f9f4e8 50%, #e9ddc8 100%);
+    }
+
+    /* ── Layout ── */
+    .page { max-width: 1160px; margin: 0 auto; padding: 32px 18px 72px; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 42px 44px;
+      border-radius: 28px;
+      background: linear-gradient(140deg, rgba(255,252,245,.97), rgba(252,245,230,.88));
+      border: 1px solid rgba(255,255,255,.75);
+      box-shadow: var(--shadow);
+    }
+    .hero::before {
+      content: "北京";
+      position: absolute;
+      right: -20px;
+      top: -20px;
+      font-size: 200px;
+      font-weight: 900;
+      color: rgba(176,48,32,.05);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 68px);
+      line-height: .96;
+      margin-bottom: 16px;
+      max-width: 9ch;
+    }
+    .hero-lead {
+      font-size: 17px;
+      line-height: 1.85;
+      color: var(--muted);
+      max-width: 640px;
+    }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.6);
+      backdrop-filter: blur(4px);
+      color: var(--muted);
+    }
+    .badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent2);
+      flex-shrink: 0;
+    }
+
+    /* ── Section wrapper ── */
+    .section { margin-top: 28px; }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-head h2 {
+      font-size: 22px;
+    }
+    .section-head .sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Timeline ── */
+    .timeline-panel {
+      background: rgba(255,252,245,.82);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,.65);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 32px;
+    }
+    .tl-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 20px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .tl-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .tl-item:first-child { padding-top: 0; }
+    .tl-time {
+      font-size: 20px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.3;
+    }
+    .tl-body h4 { font-size: 16px; margin-bottom: 4px; }
+    .tl-body p { font-size: 14px; color: var(--muted); line-height: 1.75; }
+
+    /* ── Route cards ── */
+    .route-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .route-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .route-card .route-title {
+      font-size: 17px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .route-card .route-title .arrow {
+      color: var(--accent);
+      font-style: normal;
+    }
+    .route-steps { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .route-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+    .route-steps li .step-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .icon-metro { background: var(--accent); }
+    .icon-walk  { background: var(--accent2); }
+    .icon-xfer  { background: var(--accent3); }
+    .route-stat {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .stat-chip {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(30,26,20,.05);
+      color: var(--muted);
+    }
+
+    /* ── Food ── */
+    .food-group { display: flex; flex-direction: column; gap: 16px; }
+    .food-location-block {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .food-location-header {
+      padding: 14px 22px;
+      background: linear-gradient(90deg, rgba(176,48,32,.07), transparent);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .food-location-header h3 { font-size: 17px; }
+    .food-location-header .loc-tag {
+      font-size: 11px;
+      letter-spacing: .18em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .food-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+    .food-card {
+      padding: 18px 22px;
+      border-right: 1px solid var(--line);
+    }
+    .food-card:last-child { border-right: none; }
+    .food-card h4 { font-size: 15px; margin-bottom: 5px; }
+    .food-card .food-addr { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .food-card .food-badge {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(26,92,72,.09);
+      color: var(--accent2);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 48px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    /* ── Animations ── */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero         { animation: rise .7s ease both; }
+    .timeline-panel { animation: rise .7s .1s ease both; }
+    .route-card   { animation: rise .7s .2s ease both; }
+    .food-location-block { animation: rise .7s .3s ease both; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .hero { padding: 28px 22px; }
+      .timeline-panel { padding: 20px 18px; }
+      .tl-item { grid-template-columns: 58px 1fr; gap: 12px; }
+      .route-grid { grid-template-columns: 1fr; }
+      .food-cards { grid-template-columns: 1fr; }
+      .food-card { border-right: none; border-bottom: 1px solid var(--line); }
+      .food-card:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══ Hero ═══ -->
+  <section class="hero">
+    <p class="eyebrow">Beijing One-Day Circuit · 2026</p>
+    <h1>北京<br>一日游攻略</h1>
+    <p class="hero-lead">
+      以天安门广场、颐和园、南锣鼓巷为主线，全程优先使用地铁串联城市地标、皇家园林与历史胡同，兼顾换乘效率与游玩节奏。地铁线路与美食信息均来自高德地图 MCP 实时查询。
+    </p>
+    <div class="badge-row">
+      <span class="badge"><span class="dot" style="background:var(--accent)"></span>北京站 出发</span>
+      <span class="badge"><span class="dot" style="background:var(--accent3)"></span>天安门广场</span>
+      <span class="badge"><span class="dot" style="background:var(--accent2)"></span>颐和园</span>
+      <span class="badge"><span class="dot" style="background:var(--accent)"></span>南锣鼓巷</span>
+    </div>
+  </section>
+
+  <!-- ═══ Timeline ═══ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>全天行程</h2>
+      <span class="sub">建议出行时间安排</span>
+    </div>
+    <div class="timeline-panel">
+      <div class="tl-item">
+        <div class="tl-time">08:30</div>
+        <div class="tl-body">
+          <h4>天安门东集合</h4>
+          <p>先从北京站乘地铁前往天安门广场，游览天安门、广场及中轴线区域，控制步行节奏，保留上午体力。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">10:30</div>
+        <div class="tl-body">
+          <h4>前往颐和园</h4>
+          <p>于天安门西站换乘1号线，西单转4号线北行，直抵北宫门；中午前后进园，优先浏览长廊、昆明湖和佛香阁。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">13:00</div>
+        <div class="tl-body">
+          <h4>颐和园午餐</h4>
+          <p>可在园内松堂快餐厅或北宫门周边餐厅就餐，补充体力后继续游园。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">15:30</div>
+        <div class="tl-body">
+          <h4>前往南锣鼓巷</h4>
+          <p>从北宫门乘4号线南行，平安里换乘6号线，两站即到南锣鼓巷站，全程地铁减少路面交通不确定性。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">16:30</div>
+        <div class="tl-body">
+          <h4>胡同漫游与小吃</h4>
+          <p>在南锣鼓巷、帽儿胡同、鼓楼东大街一带慢逛，体验老周铺子、百年卤煮、炸酱面等地道胡同风味。</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">19:00</div>
+        <div class="tl-body">
+          <h4>晚餐与返程</h4>
+          <p>根据排队情况在胡同周边用餐，随后从南锣鼓巷地铁站返回北京站或住处。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Subway Routes ═══ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>地铁换乘线路</h2>
+      <span class="sub">来源：高德 MCP · 已入库 subway_trips 表</span>
+    </div>
+    <div class="route-grid">
+
+      <!-- 北京站 → 天安门 -->
+      <div class="route-card">
+        <div class="route-title">
+          北京站 <em class="arrow">→</em> 天安门
+        </div>
+        <ul class="route-steps">
+          <li>
+            <span class="step-icon icon-walk">步</span>
+            步行至北京站地铁站 D西南入口（约 365 米）
+          </li>
+          <li>
+            <span class="step-icon icon-metro">地</span>
+            乘地铁 2 号线外环，北京站 → 建国门（约 957 米）
+          </li>
+          <li>
+            <span class="step-icon icon-xfer">换</span>
+            建国门站换乘地铁 1 号线八通线
+          </li>
+          <li>
+            <span class="step-icon icon-metro">地</span>
+            建国门 → 天安门东，途经东单、王府井
+          </li>
+          <li>
+            <span class="step-icon icon-walk">步</span>
+            天安门东出站步行至目的地（约 691 米）
+          </li>
+        </ul>
+        <div class="route-stat">
+          <span class="stat-chip">全程 3,559 米</span>
+          <span class="stat-chip">约 30 分钟</span>
+          <span class="stat-chip">步行 1,152 米</span>
+        </div>
+      </div>
+
+      <!-- 天安门 → 颐和园 -->
+      <div class="route-card">
+        <div class="route-title">
+          天安门 <em class="arrow">→</em> 颐和园
+        </div>
+        <ul class="route-steps">
+          <li>
+            <span class="step-icon icon-walk">步</span>
+            步行至天安门西地铁站
+          </li>
+          <li>
+            <span class="step-icon icon-metro">地</span>
+            乘地铁 1 号线，天安门西 → 西单（往玉泉路方向）
+          </li>
+          <li>
+            <span class="step-icon icon-xfer">换</span>
+            西单站换乘地铁 4 号线大兴线
+          </li>
+          <li>
+            <span class="step-icon icon-metro">地</span>
+            西单 → 北宫门（往安河桥北方向），途经西直门、动物园、国家图书馆、圆明园、西苑等
+          </li>
+          <li>
+            <span class="step-icon icon-walk">步</span>
+            北宫门站步行至颐和园北宫门入口
+          </li>
+        </ul>
+        <div class="route-stat">
+          <span class="stat-chip">全程 22,394 米</span>
+          <span class="stat-chip">约 88 分钟</span>
+          <span class="stat-chip">步行 3,164 米</span>
+        </div>
+      </div>
+
+      <!-- 颐和园 → 南锣鼓巷 -->
+      <div class="route-card">
+        <div class="route-title">
+          颐和园 <em class="arrow">→</em> 南锣鼓巷
+        </div>
+        <ul class="route-steps">
+          <li>
+            <span class="step-icon icon-walk">步</span>
+            步行返回北宫门地铁站
+          </li>
+          <li>
+            <span class="step-icon icon-metro">地</span>
+            乘地铁 4 号线大兴线，北宫门 → 平安里（往天宫院方向），途经西苑、中关村、海淀黄庄、西直门、新街口
+          </li>
+          <li>
+            <span class="step-icon icon-xfer">换</span>
+            平安里站换乘地铁 6 号线
+          </li>
+          <li>
+            <span class="step-icon icon-metro">地</span>
+            平安里 → 南锣鼓巷（往潞阳方向），途经北海北
+          </li>
+          <li>
+            <span class="step-icon icon-walk">步</span>
+            南锣鼓巷站 E 口出，步行进入胡同核心区
+          </li>
+        </ul>
+        <div class="route-stat">
+          <span class="stat-chip">全程 19,627 米</span>
+          <span class="stat-chip">约 62 分钟</span>
+          <span class="stat-chip">步行 1,740 米</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ Foods ═══ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>周边美食推荐</h2>
+      <span class="sub">来源：高德 MCP · 已入库 location_foods 表，每处 3 家</span>
+    </div>
+    <div class="food-group">
+
+      <!-- 颐和园 -->
+      <div class="food-location-block">
+        <div class="food-location-header">
+          <span class="loc-tag">Landmark</span>
+          <h3>颐和园周边</h3>
+        </div>
+        <div class="food-cards">
+          <div class="food-card">
+            <h4>松堂快餐厅</h4>
+            <p class="food-addr">新建宫门路19号颐和园内<br>北宫门地铁站A西北口步行420米</p>
+            <span class="food-badge">园内餐饮</span>
+          </div>
+          <div class="food-card">
+            <h4>肯德基（北宫门店）</h4>
+            <p class="food-addr">颐和园北宫门三岔口33号<br>大有商业办公楼B座一层</p>
+            <span class="food-badge">快餐</span>
+          </div>
+          <div class="food-card">
+            <h4>北宫门餐厅</h4>
+            <p class="food-addr">颐和园路与青龙桥东街<br>交叉口东200米</p>
+            <span class="food-badge">中餐</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 南锣鼓巷 -->
+      <div class="food-location-block">
+        <div class="food-location-header">
+          <span class="loc-tag">Landmark</span>
+          <h3>南锣鼓巷周边</h3>
+        </div>
+        <div class="food-cards">
+          <div class="food-card">
+            <h4>老周铺子</h4>
+            <p class="food-addr">南锣鼓巷与北兵马司胡同<br>交叉口北20米</p>
+            <span class="food-badge">胡同小吃</span>
+          </div>
+          <div class="food-card">
+            <h4>方砖厂69号炸酱面</h4>
+            <p class="food-addr">北京城区南锣鼓巷117号</p>
+            <span class="food-badge">老北京面食</span>
+          </div>
+          <div class="food-card">
+            <h4>百年卤煮（南锣鼓巷店）</h4>
+            <p class="food-addr">北京非物质文化遗产<br>博物馆北门旁</p>
+            <span class="food-badge">传统卤味</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="footer">
+    <p>数据来源：高德地图 MCP 实时查询 · 入库时间：2026-03-11</p>
+    <p style="margin-top:4px">数据库：beijing_trip · subway_trips 表 3 条 · location_foods 表 6 条</p>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "servers": {
+    "sqlite": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@node2flow/sqlite-mcp"
+      ],
+      "env": {
+        "SQLITE_DB_PATH": "${workspaceFolder}/data/travel-guide.db"
+      }
+    },
+    "amap-maps": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@amap/amap-maps-mcp-server"
+      ],
+      "env": {
+        "AMAP_MAPS_API_KEY": "${env:AMAP_MAPS_API_KEY}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ]
+    }
+  }
+}

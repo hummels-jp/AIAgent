@@ -131,7 +131,7 @@ function currentSpeedMps() {
 
 function updateOverviewMeta(point, headingDeg = 0) {
   if (!overviewMeta || !point) return;
-  overviewMeta.textContent = `车辆位置：${point[0].toFixed(6)}, ${point[1].toFixed(6)} ｜ 朝向：${Math.round(headingDeg)}°`;
+  overviewMeta.textContent = `Vehicle position: ${point[0].toFixed(6)}, ${point[1].toFixed(6)} | Heading: ${Math.round(headingDeg)}°`;
 }
 
 function initOverviewMap(path) {
@@ -293,7 +293,7 @@ function getRoutePayload() {
 function renderSteps(steps) {
   const node = document.getElementById("steps");
   if (!steps || steps.length === 0) {
-    node.textContent = "暂无步骤";
+    node.textContent = "No steps available";
     return;
   }
 
@@ -305,7 +305,7 @@ function renderSteps(steps) {
 
   node.innerHTML = steps
     .map((step, idx) => {
-      const main = step.instruction || step.mode || "步骤";
+      const main = step.instruction || step.mode || "Step";
       const sub = `${step.mode || ""} ${step.distance_text || ""} ${step.duration_text || ""}`.trim();
       const point = stepStartPoints[idx];
       const streetUrl = point
@@ -316,7 +316,7 @@ function renderSteps(steps) {
           <div class="step-main">${idx + 1}. ${main}</div>
           <div class="step-sub">${sub || "-"}</div>
           <div class="step-actions">
-            ${streetUrl ? `<a class="street-link" href="${streetUrl}" target="_blank" rel="noopener noreferrer">查看该步街景</a>` : ""}
+            ${streetUrl ? `<a class="street-link" href="${streetUrl}" target="_blank" rel="noopener noreferrer">Open Street View for this step</a>` : ""}
           </div>
         </div>
       `;
@@ -343,8 +343,8 @@ function renderMap(route) {
       weight: 6,
     }).addTo(detailMap);
 
-    L.marker(path[0]).addTo(detailMap).bindTooltip("起", { permanent: true, direction: "top" });
-    L.marker(path[path.length - 1]).addTo(detailMap).bindTooltip("终", { permanent: true, direction: "top" });
+    L.marker(path[0]).addTo(detailMap).bindTooltip("Origin", { permanent: true, direction: "top" });
+    L.marker(path[path.length - 1]).addTo(detailMap).bindTooltip("Destination", { permanent: true, direction: "top" });
     detailMap.fitBounds(path, { padding: [30, 30] });
 
     carMarker = L.marker(path[0], { icon: buildVehicleIcon() }).addTo(detailMap);
@@ -509,7 +509,7 @@ async function updateStreetPreview(point, forceLookup = false) {
   if (!point) return;
 
   if (mapillaryEnabled) {
-    setStreetStatus("街景源：Mapillary 检索中...", "pending");
+    setStreetStatus("Street view source: Looking up Mapillary...", "pending");
     const now = Date.now();
     const moved = mapillaryLastLookupPoint ? haversineMeters(mapillaryLastLookupPoint, point) : Infinity;
     const shouldLookup =
@@ -528,29 +528,29 @@ async function updateStreetPreview(point, forceLookup = false) {
         mapillaryLastLookupPoint = point;
         if (image && image.id) {
           lastMapillaryImageId = image.id;
-          const driveHint = activeMode === "drive" ? "｜行车前视（视高100cm）" : "";
-          setStreetStatus(`街景源：Mapillary（实时）${driveHint}`, "mapillary");
+          const driveHint = activeMode === "drive" ? " | front driving view (eye height 100 cm)" : "";
+          setStreetStatus(`Street view source: Mapillary (live)${driveHint}`, "mapillary");
           loadStreetEmbedUrl(buildMapillaryEmbedUrl(image.id), buildMapillaryOpenUrl(image.id));
           return;
         }
 
-        setStreetStatus("街景源：Google（Mapillary附近无图）", "google");
+        setStreetStatus("Street view source: Google (no nearby Mapillary image)", "google");
       } catch {
         // Silently fallback to Google preview when Mapillary lookup fails.
-        setStreetStatus("街景源：Google（Mapillary检索失败）", "google");
+        setStreetStatus("Street view source: Google (Mapillary lookup failed)", "google");
       }
     }
 
     if (lastMapillaryImageId) {
-      const driveHint = activeMode === "drive" ? "｜行车前视（视高100cm）" : "";
-      setStreetStatus(`街景源：Mapillary（缓存复用）${driveHint}`, "mapillary");
+      const driveHint = activeMode === "drive" ? " | front driving view (eye height 100 cm)" : "";
+      setStreetStatus(`Street view source: Mapillary (cached)${driveHint}`, "mapillary");
       loadStreetEmbedUrl(buildMapillaryEmbedUrl(lastMapillaryImageId), buildMapillaryOpenUrl(lastMapillaryImageId));
       return;
     }
   }
 
   if (!mapillaryEnabled) {
-    setStreetStatus("街景源：Google（未配置Mapillary）", "google");
+    setStreetStatus("Street view source: Google (Mapillary not configured)", "google");
   }
 
   const embedUrl = buildGoogleStreetEmbedUrl(point);
@@ -642,7 +642,7 @@ function updateProgress() {
   const percent = total === 0 ? 0 : (current / total) * 100;
 
   progressBar.style.width = `${percent}%`;
-  progressText.textContent = `进度：${current} / ${total}`;
+  progressText.textContent = `Progress: ${current} / ${total}`;
 }
 
 function updateButtons() {
@@ -801,7 +801,7 @@ function startPlayback() {
     if (point) {
       syncStreetPreview(point, true);
       setStreetStatus(
-        mapillaryEnabled ? "街景源：Mapillary（播放联动中）" : "街景源：Google（播放联动中）",
+        mapillaryEnabled ? "Street view source: Mapillary (playback sync active)" : "Street view source: Google (playback sync active)",
         mapillaryEnabled ? "mapillary" : "google"
       );
     }
@@ -829,7 +829,7 @@ function resetPlayback() {
 (function init() {
   const payload = getRoutePayload();
   if (!payload || !payload.route) {
-    document.getElementById("meta").textContent = "未找到线路详情数据，请返回主页面重新点击链接。";
+    document.getElementById("meta").textContent = "Route detail data was not found. Please return to the main page and open the link again.";
     return;
   }
 
@@ -838,16 +838,16 @@ function resetPlayback() {
   const meta = document.getElementById("meta");
   const source = document.getElementById("source");
 
-  title.textContent = `方案 ${Number(payload.index) + 1} 详情`;
-  meta.textContent = `${payload.query.origin} -> ${payload.query.destination} | 时长: ${route.duration_text || "-"} | 距离: ${route.distance_text || "-"}`;
+  title.textContent = `Option ${Number(payload.index) + 1} Details`;
+  meta.textContent = `${payload.query.origin} -> ${payload.query.destination} | Duration: ${route.duration_text || "-"} | Distance: ${route.distance_text || "-"}`;
   source.textContent = payload.source || "";
   mapillaryApiKey = (payload.mapillaryApiKey || "").trim();
   mapillaryEnabled = Boolean(mapillaryApiKey);
   setStreetStatus(
-    mapillaryEnabled ? "街景源：Mapillary 已就绪（行车时优先前视）" : "街景源：Google（未配置Mapillary）",
+    mapillaryEnabled ? "Street view source: Mapillary ready (prioritizing forward-facing driving views)" : "Street view source: Google (Mapillary not configured)",
     mapillaryEnabled ? "mapillary" : "google"
   );
-  streetAutoBtn.textContent = `街景自动联动：开（${mapillaryEnabled ? "Mapillary" : "Google"}）`;
+  streetAutoBtn.textContent = `Street View Auto Sync: On (${mapillaryEnabled ? "Mapillary" : "Google"})`;
 
   renderMap(route);
   renderSteps(route.steps || []);
@@ -873,7 +873,7 @@ function resetPlayback() {
   });
   streetAutoBtn.addEventListener("click", () => {
     autoStreetEnabled = !autoStreetEnabled;
-    streetAutoBtn.textContent = `街景自动联动：${autoStreetEnabled ? "开" : "关"}（${mapillaryEnabled ? "Mapillary" : "Google"}）`;
+    streetAutoBtn.textContent = `Street View Auto Sync: ${autoStreetEnabled ? "On" : "Off"} (${mapillaryEnabled ? "Mapillary" : "Google"})`;
     if (autoStreetEnabled && currentStepIndex >= 0) {
       const point = stepStartPoints[currentStepIndex];
       if (point) syncStreetPreview(point, true);

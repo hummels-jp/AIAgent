@@ -25,7 +25,7 @@ let locateMarker = null;
 const colors = ["#2563eb", "#16a34a", "#dc2626", "#9333ea", "#ea580c"];
 
 function updateDataSourceBadge(text) {
-  dataSourceNode.textContent = `数据来源：${text}`;
+  dataSourceNode.textContent = `Data source: ${text}`;
 }
 
 function formatLatLng(latlng) {
@@ -34,8 +34,8 @@ function formatLatLng(latlng) {
 
 function setPointAsEndpoint(kind, latlng) {
   const value = formatLatLng(latlng);
-  const markerTitle = kind === "origin" ? "起点(鼠标)" : "终点(鼠标)";
-  const markerLabel = kind === "origin" ? "起" : "终";
+  const markerTitle = kind === "origin" ? "Origin (map)" : "Destination (map)";
+  const markerLabel = kind === "origin" ? "Origin" : "Destination";
 
   if (kind === "origin") {
     originInput.value = value;
@@ -80,7 +80,7 @@ function autoSubmitIfReady() {
   if (!origin || !destination) return;
   if (submitBtn.disabled) return;
 
-  updateDataSourceBadge("起终点已设置，自动计算中");
+  updateDataSourceBadge("Endpoints set, calculating automatically");
   form.requestSubmit();
 }
 
@@ -90,7 +90,7 @@ async function geocodeAddress(query) {
   if (mapboxApiKey) {
     const mapboxUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${encodeURIComponent(
       mapboxApiKey
-    )}&limit=1&language=zh`;
+    )}&limit=1&language=en`;
     const res = await fetch(mapboxUrl);
     if (res.ok) {
       const data = await res.json();
@@ -119,18 +119,18 @@ async function geocodeAddress(query) {
 async function locateMapByAddress() {
   const query = mapLocateInput.value.trim();
   if (!query) {
-    updateDataSourceBadge("请输入定位地址");
+    updateDataSourceBadge("Please enter an address to locate");
     return;
   }
 
   mapLocateBtn.disabled = true;
   const oldText = mapLocateBtn.textContent;
-  mapLocateBtn.textContent = "定位中...";
+  mapLocateBtn.textContent = "Locating...";
 
   try {
     const point = await geocodeAddress(query);
     if (!point || Number.isNaN(point.lat) || Number.isNaN(point.lng)) {
-      updateDataSourceBadge("定位失败：未找到地址");
+      updateDataSourceBadge("Locate failed: address not found");
       return;
     }
 
@@ -139,15 +139,15 @@ async function locateMapByAddress() {
 
     if (locateMarker) {
       locateMarker.setLatLng(latlng);
-      locateMarker.bindTooltip(`定位: ${point.label}`, { direction: "top", offset: [0, -10] });
+      locateMarker.bindTooltip(`Located: ${point.label}`, { direction: "top", offset: [0, -10] });
     } else {
-      locateMarker = L.marker(latlng, { title: "定位点" }).addTo(map);
-      locateMarker.bindTooltip(`定位: ${point.label}`, { direction: "top", offset: [0, -10] });
+      locateMarker = L.marker(latlng, { title: "Located point" }).addTo(map);
+      locateMarker.bindTooltip(`Located: ${point.label}`, { direction: "top", offset: [0, -10] });
     }
     locateMarker.openTooltip();
-    updateDataSourceBadge("地址定位成功");
+    updateDataSourceBadge("Address located successfully");
   } catch (error) {
-    updateDataSourceBadge(`定位异常: ${error}`);
+    updateDataSourceBadge(`Locate error: ${error}`);
   } finally {
     mapLocateBtn.disabled = false;
     mapLocateBtn.textContent = oldText;
@@ -200,7 +200,7 @@ function decodePolyline(encoded) {
 
 function renderRouteList(routes) {
   if (!routes || routes.length === 0) {
-    routeListNode.textContent = "暂无路线";
+    routeListNode.textContent = "No routes available";
     return;
   }
 
@@ -208,17 +208,17 @@ function renderRouteList(routes) {
     .map((route, idx) => {
       const transitLines = route.steps
         .filter((step) => step.mode === "TRANSIT" && step.transit)
-        .map((step) => `${step.transit.vehicle_name || "交通"} ${step.transit.line_name || ""}`.trim())
+        .map((step) => `${step.transit.vehicle_name || "Transit"} ${step.transit.line_name || ""}`.trim())
         .join(" → ");
 
       return `
         <article class="route-card ${idx === selectedRouteIndex ? "active" : ""}" data-route-index="${idx}">
-          <h3>方案 ${idx + 1}：${route.summary || "公交地铁换乘"}</h3>
-          <div class="meta">时长：${route.duration_text || "-"} ｜ 距离：${route.distance_text || "-"} ｜ 票价：${route.fare || "未知"}</div>
-          <div class="meta">出发：${route.start_address || "-"}</div>
-          <div class="meta">到达：${route.end_address || "-"}</div>
-          <div class="lines">线路：${transitLines || "请查看地图与步骤"}</div>
-          <a class="route-link" href="/static/route-detail.html" data-route-index="${idx}" target="_blank" rel="noopener noreferrer">查看地图与线路详情</a>
+          <h3>Option ${idx + 1}: ${route.summary || "Bus/Subway Transfer"}</h3>
+          <div class="meta">Duration: ${route.duration_text || "-"} | Distance: ${route.distance_text || "-"} | Fare: ${route.fare || "Unknown"}</div>
+          <div class="meta">Departure: ${route.start_address || "-"}</div>
+          <div class="meta">Arrival: ${route.end_address || "-"}</div>
+          <div class="lines">Lines: ${transitLines || "See the map and step details"}</div>
+          <a class="route-link" href="/static/route-detail.html" data-route-index="${idx}" target="_blank" rel="noopener noreferrer">Open map and route details</a>
         </article>
       `;
     })
@@ -244,7 +244,7 @@ function openRouteDetail(index) {
   try {
     localStorage.setItem(key, JSON.stringify(payload));
   } catch (error) {
-    alert(`无法保存路线详情数据：${error}`);
+    alert(`Unable to save route detail data: ${error}`);
     return;
   }
 
@@ -263,8 +263,8 @@ function renderRouteMarkers(route) {
   if (firstStep.polyline) {
     const startPath = decodePolyline(firstStep.polyline);
     if (startPath.length > 0) {
-      const marker = L.marker(startPath[0], { title: "起点" });
-      marker.bindTooltip("起", { permanent: true, direction: "top", offset: [0, -10] });
+      const marker = L.marker(startPath[0], { title: "Origin" });
+      marker.bindTooltip("Origin", { permanent: true, direction: "top", offset: [0, -10] });
       marker.addTo(map);
       markers.push(marker);
     }
@@ -273,8 +273,8 @@ function renderRouteMarkers(route) {
   if (lastStep.polyline) {
     const endPath = decodePolyline(lastStep.polyline);
     if (endPath.length > 0) {
-      const marker = L.marker(endPath[endPath.length - 1], { title: "终点" });
-      marker.bindTooltip("终", { permanent: true, direction: "top", offset: [0, -10] });
+      const marker = L.marker(endPath[endPath.length - 1], { title: "Destination" });
+      marker.bindTooltip("Destination", { permanent: true, direction: "top", offset: [0, -10] });
       marker.addTo(map);
       markers.push(marker);
     }
@@ -368,10 +368,10 @@ function initMap() {
     const coordinateText = formatLatLng(latlng);
     const popupHtml = `
       <div>
-        <div><strong>坐标</strong>: ${coordinateText}</div>
+        <div><strong>Coordinates</strong>: ${coordinateText}</div>
         <div class="map-select-actions">
-          <button type="button" class="map-select-btn" data-pick-kind="origin" data-lat="${latlng.lat}" data-lng="${latlng.lng}">设为起点</button>
-          <button type="button" class="map-select-btn" data-pick-kind="destination" data-lat="${latlng.lat}" data-lng="${latlng.lng}">设为终点</button>
+          <button type="button" class="map-select-btn" data-pick-kind="origin" data-lat="${latlng.lat}" data-lng="${latlng.lng}">Set as origin</button>
+          <button type="button" class="map-select-btn" data-pick-kind="destination" data-lat="${latlng.lat}" data-lng="${latlng.lng}">Set as destination</button>
         </div>
       </div>
     `;
@@ -437,14 +437,14 @@ form.addEventListener("submit", async (event) => {
   const origin = originInput.value.trim();
   const destination = destinationInput.value.trim();
   if (!origin || !destination) {
-    replyNode.textContent = "请输入起点和终点";
+    replyNode.textContent = "Please enter both an origin and a destination";
     return;
   }
 
   submitBtn.disabled = true;
-  replyNode.textContent = "查询中，请稍候...";
-  routeListNode.textContent = "正在加载路线...";
-  updateDataSourceBadge("查询中");
+  replyNode.textContent = "Searching, please wait...";
+  routeListNode.textContent = "Loading routes...";
+  updateDataSourceBadge("Searching");
   clearUserPlacedMarkers();
 
   try {
@@ -456,28 +456,28 @@ form.addEventListener("submit", async (event) => {
 
     const data = await response.json();
     if (!response.ok) {
-      replyNode.textContent = data.detail || "查询失败";
-      routeListNode.textContent = "暂无结果";
-      updateDataSourceBadge("查询失败");
+      replyNode.textContent = data.detail || "Search failed";
+      routeListNode.textContent = "No results available";
+      updateDataSourceBadge("Search failed");
       currentRoutes = [];
       clearMapObjects();
       return;
     }
 
-    replyNode.textContent = data.reply || "已返回路线结果";
+    replyNode.textContent = data.reply || "Route results are ready";
     const plan = data.plan || {};
     const routes = plan.routes || [];
     const provider = plan.provider || "google";
     const mode = plan.mode_used || "transit";
-    const statusText = `${provider.toUpperCase()} / ${mode}${data.degraded ? " / 降级" : ""}`;
+    const statusText = `${provider.toUpperCase()} / ${mode}${data.degraded ? " / degraded" : ""}`;
     updateDataSourceBadge(statusText);
 
     renderRouteList(routes);
     renderRoutesOnMap(routes);
   } catch (error) {
-    replyNode.textContent = `请求异常: ${error}`;
-    routeListNode.textContent = "暂无结果";
-    updateDataSourceBadge("请求异常");
+    replyNode.textContent = `Request error: ${error}`;
+    routeListNode.textContent = "No results available";
+    updateDataSourceBadge("Request error");
     currentRoutes = [];
     clearMapObjects();
   } finally {
