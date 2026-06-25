@@ -1,0 +1,54 @@
+Sheet names: ['詳細比較テーブル', '主な違いの要約', 'Sheet3']
+
+=== 詳細比較テーブル ===
+Dimensions: (16, 5)
+Columns: ['詳細比較テーブル', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4']
+      詳細比較テーブル       Unnamed: 1        Unnamed: 2           Unnamed: 3         Unnamed: 4
+0          NaN              NaN               NaN                  NaN                NaN
+1           特徴     kawasaki.osm  kawasaki.net.xml        kawasaki.xodr  dgm_kawasaki.xodr
+2         主な用途         実地理データ保存       交通流シミュレーション  運転シミュレーション（ADASテスト）          高精度地図/可視化
+3          座標系  WGS84 (lat/lon)       UTM Zone 54         UTM + offset       直接地理坐标 (大范围)
+4         幾何精度            ノード座標              車線形状              高精度道路幾何        超高精度（16桁小数）
+5      ファイルサイズ         1,860 KB          1,118 KB             3,269 KB           8,404 KB
+6           行数            23828             10680                72885           ~395,000
+7       データ標準化            OSM仕様            SUMO仕様      OpenDRIVE 1.4標準    OpenDRIVE 1.5標準
+8       応用シナリオ             地図編集              交通管理              自動運転テスト    高精度シミュレーション/可視化
+9          道路数                -                 -                 ~471               ~476
+10        交差点数                -              ~217                 ~217               ~285
+11        速度制限           あり（タグ）            あり（属性）               あり（曲線）                 なし
+12   surface要素                -                 -                   なし                  有
+13  userData拡張                -                 -                   なし     有 (viStyleDef)
+14   メタデータの豊富さ            ⭐⭐⭐⭐⭐               ⭐⭐⭐                 ⭐⭐⭐⭐               ⭐⭐⭐⭐
+15  シミュレーション精度                -                中等                  高精度               超高精度
+
+=== 主な違いの要約 ===
+Dimensions: (57, 7)
+Columns: ['Unnamed: 0', '主な違いの要約', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4', 'Unnamed: 5', 'Unnamed: 6']
+   Unnamed: 0                                  主な違いの要約    Unnamed: 2 Unnamed: 3                  Unnamed: 4                           Unnamed: 5             Unnamed: 6
+0         NaN                                      NaN           NaN        NaN                         NaN                                  NaN                    NaN
+1         NaN                                       違い  OpenDriveの規定     OSMの規定        kawasaki.xodr (SUMO)              dgm_kawasaki.xodr (DGM)                     影響
+2         NaN                              Headerバージョン           NaN        NaN            revMinor=4 (1.4)                     revMinor=5 (1.5)     DGMはより多くの拡張属性をサポート
+3         NaN                                     座標系统           NaN        NaN                UTM + offset                 直接地理坐标 (~1554万/421万)            統一には座標変換が必要
+4         NaN                                 数值フォーマット           NaN        NaN         常规小数 (107.64497470)       科学计数法 (3.4112208657352156e+01)    DGMの精度が高いが、特別な処理が必要
+5       コンテンツ                                      車線幅           NaN        NaN                       3.20米                                3.75米                 道路幅の違い
+6         NaN                                  車線マーキング           NaN        NaN        width=0.13, なしheight  width=0.15, height=0.02, laneChange               DGMがより詳細
+7         NaN                                     速度情報           NaN        NaN  有 (5.56, 11.11, 13.89 m/s)                                   なし  SUMOはシミュレーションにより適している
+8         NaN                                   rule属性           NaN        NaN                          なし                       所有道路rule="RHT"        DGMは交通ルールを明確に定義
+9         NaN                                surface要素           NaN        NaN                          なし                               每个道路都有          DGMは路面属性をサポート
+10       道路幾何      道路基準線（Reference line / center line）             〇        NaN                         NaN                                  NaN                    NaN
+11        NaN                曲率（line / arc / clothoid）             〇        NaN                         NaN                                  NaN                    NaN
+12        NaN                                      道路長             〇        NaN                         NaN                                  NaN                    NaN
+13        NaN                            標高（elevation）             〇        NaN                         NaN                                  NaN                    NaN
+14        NaN                     横断勾配（superelevation）             〇        NaN                         NaN                                  NaN                    NaN
+15        NaN                    横断形状（lateral profile）             〇        NaN                         NaN                                  NaN                    NaN
+16      レーン構造                                    レーンID             〇        NaN                         NaN                                  NaN                    NaN
+17        NaN                                     レーン幅             〇        NaN                         NaN                                  NaN                    NaN
+18        NaN  レーンタイプ（driving / shoulder / sidewalk 等）             〇        NaN                         NaN                                  NaN                    NaN
+19        NaN                                  レーン接続関係             〇        NaN                         NaN                                  NaN                    NaN
+
+=== Sheet3 ===
+Dimensions: (0, 0)
+Columns: []
+Empty DataFrame
+Columns: []
+Index: []
