@@ -94,6 +94,124 @@
       to { transform: rotate(360deg); }
     }
 
+    /* === 启动指南面板 === */
+    .startup-guide {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .startup-guide summary {
+      cursor: pointer;
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      list-style: none;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .startup-guide summary:hover { background: var(--bg-card-hover); }
+    .startup-guide summary::-webkit-details-marker { display: none; }
+    .startup-guide summary::before {
+      content: '▶';
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+    }
+    .startup-guide[open] summary::before { transform: rotate(90deg); }
+    .startup-guide .body { padding: 0 1.25rem 1.25rem; }
+    .startup-guide .step {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .startup-guide .step-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--greed);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .startup-guide .step-title .num {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--greed);
+      color: var(--bg-primary);
+      font-size: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .startup-guide .step-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      line-height: 1.5;
+    }
+    .startup-guide .cmd-box {
+      position: relative;
+      background: #050810;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.7rem 2.6rem 0.7rem 0.9rem;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.82rem;
+      color: #c5e8d4;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 6px; right: 6px;
+      background: var(--bg-card-hover);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { color: var(--greed); border-color: var(--greed); }
+    .copy-btn.copied { color: var(--greed); border-color: var(--greed); }
+    .startup-guide .warn {
+      background: rgba(255, 165, 2, 0.1);
+      border-left: 3px solid var(--neutral);
+      padding: 0.6rem 0.9rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #ffd591;
+      margin-top: 0.6rem;
+    }
+    .startup-guide .health {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.6rem;
+    }
+    .startup-guide .health a {
+      background: #050810;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s;
+      font-family: 'Consolas', monospace;
+    }
+    .startup-guide .health a:hover {
+      color: var(--greed);
+      border-color: var(--greed);
+    }
+
     /* Main Content */
     .main-content {
       display: grid;
@@ -1931,6 +2049,44 @@
       </button>
     </header>
 
+    <!-- 启动指南 -->
+    <details class="startup-guide" id="startupGuide">
+      <summary>🚀 启动指南 / Startup Guide（点击展开）</summary>
+      <div class="body">
+
+        <div class="step">
+          <div class="step-title"><span class="num">1</span>启动 OpenD（富途客户端）</div>
+          <div class="step-desc">双击批处理脚本启动 OpenD，端口固定为 <code>11111</code>。启动后在 OpenD 界面 <b>登录账号</b>，然后 <b>点击「解锁交易」</b> 输交易密码（否则持仓接口必失败）。</div>
+          <div class="cmd-box" id="cmd1">\\wsl.localhost\Ubuntu-20.04\home\kotei\huqianqian_git\AIAgent\20260402_stock\start_opend.bat<button class="copy-btn" onclick="copyCmd('cmd1', this)">复制</button></div>
+          <div class="warn">⚠️ 必须点 OpenD 界面右上角的「<b>解锁交易</b>」按钮，按钮变灰才算解锁成功</div>
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="num">2</span>启动 Node API 服务（新开 CMD 窗口）</div>
+          <div class="step-desc">在 <b>新的 CMD 窗口</b> 中执行（OpenD 窗口不要关）。看到 <code>Server running on port 3000</code> 即启动成功。<br><span style="color:#ffd591;">⚠️ CMD 不支持 UNC 路径作为工作目录，使用 <code>pushd</code> 自动映射临时盘符。</span></div>
+          <div class="cmd-box" id="cmd2">pushd \\wsl.localhost\Ubuntu-20.04\home\kotei\huqianqian_git\AIAgent\20260402_stock
+start.bat<button class="copy-btn" onclick="copyCmd('cmd2', this)">复制</button></div>
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="num">3</span>刷新本页面 / 健康检查</div>
+          <div class="step-desc">服务起来后点上方「刷新」按钮即可。如有异常，点击下方链接逐项排查：</div>
+          <div class="health">
+            <a href="http://localhost:3000/api/health" target="_blank">① /api/health（服务存活）</a>
+            <a href="http://localhost:3000/api/check-port" target="_blank">② /api/check-port（OpenD 端口）</a>
+            <a href="http://localhost:3000/api/positions" target="_blank">③ /api/positions（持仓·需解锁）</a>
+            <a href="http://localhost:3000/api/hot-sectors" target="_blank">④ /api/hot-sectors（行情）</a>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="num">4</span>关闭顺序</div>
+          <div class="step-desc">关闭浏览器 → Ctrl+C 关掉 Node 黑窗口 → 右键托盘 OpenD 图标 → 退出（避免占用席位）。</div>
+        </div>
+
+      </div>
+    </details>
+
     <!-- Error Message -->
     <div class="error-message" id="errorMessage" style="display: none;">
       <p id="errorText">加载失败，请稍后重试</p>
@@ -2265,6 +2421,28 @@
   </div>
 
   <script>
+    // === 启动指南：复制命令 ===
+    function copyCmd(id, btn) {
+      const box = document.getElementById(id);
+      const text = Array.from(box.childNodes)
+        .filter(n => n.nodeType === Node.TEXT_NODE)
+        .map(n => n.textContent).join('').trim();
+      navigator.clipboard.writeText(text).then(() => {
+        const old = btn.textContent;
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = old; btn.classList.remove('copied'); }, 1500);
+      }).catch(() => {
+        // fallback for non-https
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+
     // 配置
     const API_URL = 'https://api.alternative.me/fng/';
     const SECTOR_API_URL = 'http://localhost:3000/api/hot-sectors';
