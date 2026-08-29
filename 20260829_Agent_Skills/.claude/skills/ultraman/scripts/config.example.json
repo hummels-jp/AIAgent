@@ -1,0 +1,15 @@
+{
+  "openrouter": {
+    "_comment": "修改 model 即可切换 OpenRouter 上的任意文生图模型",
+    "api_key": "sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "model": "qwen/qwen-image-3-pro",
+    "size": "1024x1024",
+    "site_url": "https://github.com/yourname/ultraman-skill",
+    "site_name": "Ultraman Scene Generator"
+  },
+  "model_examples": {
+    "qwen/qwen-image-3-pro": "1024x1024",
+    "google/imagen-3": "1024x1024",
+    "google/nano-banana-2": "1024x1024"
+  }
+}
