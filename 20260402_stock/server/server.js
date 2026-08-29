@@ -119,12 +119,17 @@ function getFutuData(action, options = {}) {
       
       if (code === 0) {
         try {
-          // 提取 JSON（可能有日志输出）
+          // 提取 JSON（futu SDK 可能往 stdout 输出杂讯，业务 JSON 在最后一行）
           const lines = output.split('\n').filter(l => l.trim());
-          const jsonLine = lines.find(l => l.trim().startsWith('{'));
-          
+          // 从后往前找第一个能成功 JSON.parse 的行（业务 JSON 总是最后才 print）
+          let result = null;
+          for (let i = lines.length - 1; i >= 0; i--) {
+            const ln = lines[i].trim();
+            if (!ln.startsWith('{')) continue;
+            try { result = JSON.parse(ln); break; } catch (_) {}
+          }
+          const jsonLine = result ? true : null;
           if (jsonLine) {
-            const result = JSON.parse(jsonLine);
             console.log(`[FutuService] 解析成功，connected=${result.connected}, data=${result.data?.length || 0}条`);
             resolve(result);
           } else {

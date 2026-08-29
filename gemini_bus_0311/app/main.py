@@ -116,7 +116,7 @@ def _request_directions(origin: str, destination: str, mode: str) -> dict[str, A
             "destination": destination,
             "mode": mode,
             "alternatives": "true",
-            "language": "zh-CN",
+            "language": "en",
             "departure_time": "now",
             "key": GOOGLE_MAPS_API_KEY,
         },
@@ -131,8 +131,8 @@ def _format_distance_text(meters: float | int | None) -> str | None:
         return None
     km = float(meters) / 1000.0
     if km >= 1:
-        return f"{km:.1f} 公里"
-    return f"{int(round(float(meters)))} 米"
+        return f"{km:.1f} km"
+    return f"{int(round(float(meters)))} m"
 
 
 def _format_duration_text(seconds: float | int | None) -> str | None:
@@ -140,12 +140,12 @@ def _format_duration_text(seconds: float | int | None) -> str | None:
         return None
     total_minutes = int(round(float(seconds) / 60.0))
     if total_minutes < 60:
-        return f"{max(total_minutes, 1)}分钟"
+        return f"{max(total_minutes, 1)} min"
     hours = total_minutes // 60
     minutes = total_minutes % 60
     if minutes == 0:
-        return f"{hours}小时"
-    return f"{hours}小时{minutes}分钟"
+        return f"{hours} hr"
+    return f"{hours} hr {minutes} min"
 
 
 def _mapbox_geocode(query: str) -> dict[str, Any] | None:
@@ -157,7 +157,7 @@ def _mapbox_geocode(query: str) -> dict[str, Any] | None:
         params={
             "access_token": MAPBOX_API_KEY,
             "limit": 1,
-            "language": "zh",
+            "language": "en",
             "autocomplete": "false",
         },
         timeout=REQUEST_TIMEOUT,
@@ -172,7 +172,7 @@ def _google_geocode(query: str) -> dict[str, Any] | None:
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={
             "address": query,
-            "language": "zh-CN",
+            "language": "en",
             "key": GOOGLE_MAPS_API_KEY,
         },
         timeout=REQUEST_TIMEOUT,
@@ -241,7 +241,7 @@ def _mapbox_directions(origin: str, destination: str) -> dict[str, Any] | None:
                 "overview": "full",
                 "steps": "true",
                 "geometries": "polyline",
-                "language": "zh",
+                "language": "en",
             },
             timeout=REQUEST_TIMEOUT,
         )
@@ -268,7 +268,7 @@ def _mapbox_directions(origin: str, destination: str) -> dict[str, Any] | None:
                 routes.append(
                     {
                         "route_index": idx,
-                        "summary": f"mapbox-{profile} · 方案 {idx}",
+                        "summary": f"mapbox-{profile} · Option {idx}",
                         "distance_text": _format_distance_text(route.get("distance")),
                         "duration_text": _format_duration_text(route.get("duration")),
                         "departure_time": None,
@@ -286,7 +286,7 @@ def _mapbox_directions(origin: str, destination: str) -> dict[str, Any] | None:
                 "destination": destination,
                 "routes": routes,
                 "mode_used": profile,
-                "notice": "Google 公交换乘不可用，已切换为 Mapbox 路径探索。",
+                "notice": "Google transit was unavailable, so the app switched to Mapbox route exploration.",
                 "provider": "mapbox",
                 "transit_available": False,
             }
@@ -303,7 +303,7 @@ def _parse_routes(data: dict[str, Any], origin: str, destination: str, mode: str
 
         leg = legs[0]
         steps = [_normalize_transit_step(step) for step in leg.get("steps", [])]
-        summary = route.get("summary") or f"方案 {idx}"
+        summary = route.get("summary") or f"Option {idx}"
         if mode != "transit":
             summary = f"{mode} · {summary}"
 
@@ -328,8 +328,8 @@ def _parse_routes(data: dict[str, Any], origin: str, destination: str, mode: str
 def _build_zero_results_message(data: dict[str, Any]) -> str:
     waypoints = data.get("geocoded_waypoints") or []
     if waypoints and all(wp.get("geocoder_status") == "OK" for wp in waypoints):
-        return "Google 地图当前无法提供该区域路线数据（中国大陆地区较常见），建议更换境外地点或接入高德/百度地图。"
-    return "未找到可用的公交/地铁换乘路线（请检查起点与终点名称）"
+        return "Google Maps cannot currently provide route data for this area. Try a different location or another map provider."
+    return "No bus or subway transfer routes were found. Please verify the origin and destination names."
 
 
 def get_transit_routes(origin: str, destination: str) -> dict[str, Any]:
@@ -356,13 +356,13 @@ def get_transit_routes(origin: str, destination: str) -> dict[str, Any]:
         if status in {"ZERO_RESULTS", "NOT_FOUND"}:
             raise ValueError(_build_zero_results_message(data))
         if status == "INVALID_REQUEST":
-            raise ValueError("请求参数不完整，请检查起点和终点")
+            raise ValueError("The request parameters are incomplete. Please check the origin and destination.")
         error_msg = data.get("error_message") or status
-        raise RuntimeError(f"Google Maps Directions 请求失败: {error_msg}")
+        raise RuntimeError(f"Google Maps Directions request failed: {error_msg}")
 
     routes = _parse_routes(data, origin, destination, mode_used)
     if not routes:
-        raise ValueError("未找到可用路线")
+        raise ValueError("No routes were found.")
 
     plan: dict[str, Any] = {
         "origin": origin,
@@ -371,7 +371,7 @@ def get_transit_routes(origin: str, destination: str) -> dict[str, Any]:
     }
     if mode_used != "transit":
         plan["mode_used"] = mode_used
-        plan["notice"] = "当前区域公交数据不可用，已切换为其他出行方式。"
+        plan["notice"] = "Transit data is unavailable for this area, so the app switched to another travel mode."
         plan["transit_available"] = False
 
     return plan
@@ -383,12 +383,12 @@ def run_transfer_agent(origin: str, destination: str) -> dict[str, Any]:
             "type": "function",
             "function": {
                 "name": "get_transit_routes",
-                "description": "查询起点和终点之间的公交地铁换乘路线（可返回多条备选线路）",
+                "description": "Retrieve bus and subway transfer routes between an origin and destination, including alternative options.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "origin": {"type": "string", "description": "起点站或地点"},
-                        "destination": {"type": "string", "description": "终点站或地点"},
+                        "origin": {"type": "string", "description": "Origin station or place"},
+                        "destination": {"type": "string", "description": "Destination station or place"},
                     },
                     "required": ["origin", "destination"],
                     "additionalProperties": False,
@@ -401,14 +401,14 @@ def run_transfer_agent(origin: str, destination: str) -> dict[str, Any]:
         {
             "role": "system",
             "content": (
-                "你是公交地铁换乘助手。"
-                "必须优先调用工具获得路线数据，再用中文总结推荐方案。"
-                "输出应对比多个方案，说明时间、换乘次数、线路名称。"
+                "You are a public transit transfer assistant. "
+                "You must call the tool first to get route data, then summarize the best options in English. "
+                "Compare multiple options and mention duration, transfer count, and line names."
             ),
         },
         {
             "role": "user",
-            "content": f"请查询从{origin}到{destination}的公交地铁换乘路线",
+            "content": f"Please find bus and subway transfer routes from {origin} to {destination}.",
         },
     ]
 
@@ -422,7 +422,7 @@ def run_transfer_agent(origin: str, destination: str) -> dict[str, Any]:
         if not tool_calls:
             if message.content:
                 return {"reply": message.content, "plan": latest_plan}
-            raise RuntimeError("Gemini 返回为空")
+            raise RuntimeError("Gemini returned an empty response")
 
         messages.append(message.model_dump(exclude_none=True))
 
@@ -444,7 +444,7 @@ def run_transfer_agent(origin: str, destination: str) -> dict[str, Any]:
                 }
             )
 
-    raise RuntimeError("Gemini 工具调用轮次超限")
+    raise RuntimeError("Gemini exceeded the tool-call iteration limit")
 
 
 def _is_quota_exhausted_error(exc: Exception) -> bool:
@@ -497,13 +497,13 @@ def _create_chat_completion_with_model_fallback(
 
     if last_exc:
         raise last_exc
-    raise RuntimeError("Gemini 模型调用失败")
+    raise RuntimeError("Gemini model invocation failed")
 
 
 def _build_fallback_reply(plan: dict[str, Any]) -> str:
     routes = plan.get("routes", [])
     if not routes:
-        return "已获取路线数据，但暂无可展示方案。"
+        return "Route data was retrieved, but no displayable options are available."
 
     top = routes[0]
     transit_steps = [
@@ -518,28 +518,28 @@ def _build_fallback_reply(plan: dict[str, Any]) -> str:
         if line_name:
             line_names.append(line_name)
 
-    line_text = " -> ".join(line_names[:4]) if line_names else "请查看下方路线明细"
+    line_text = " -> ".join(line_names[:4]) if line_names else "Please review the route details below"
 
     mode_used = plan.get("mode_used")
     provider = plan.get("provider")
     mode_hint = ""
     if mode_used and mode_used != "transit":
-        mode_hint = f"当前公交数据不可用，已切换为{mode_used}路线。"
+        mode_hint = f" Transit data is unavailable, so the app switched to {mode_used} routing."
     if provider == "mapbox":
-        mode_hint = "当前公交数据不可用；Mapbox 暂不提供公交换乘，仅返回驾车/步行探索路线。"
+        mode_hint = " Transit data is unavailable; Mapbox does not provide transit transfers here, so only driving or walking exploration routes are shown."
 
     return (
-        "当前 Gemini 配额不足，已自动切换为基础路线建议。"
+        "Gemini quota is currently unavailable, so the app switched to a basic route summary."
         f"{mode_hint}"
-        f"优先参考方案1：预计{top.get('duration_text') or '-'}，"
-        f"距离{top.get('distance_text') or '-'}，"
-        f"涉及线路：{line_text}。"
+        f" Recommended option 1: estimated duration {top.get('duration_text') or '-'},"
+        f" distance {top.get('distance_text') or '-'},"
+        f" lines involved: {line_text}."
     )
 
 
 def _build_llm_unavailable_reply(plan: dict[str, Any]) -> str:
     base = _build_fallback_reply(plan)
-    return base.replace("当前 Gemini 配额不足", "当前 Gemini 服务不可用")
+    return base.replace("Gemini quota is currently unavailable", "Gemini is currently unavailable")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -565,7 +565,7 @@ def transit_agent(payload: RouteRequest):
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"路线服务请求失败: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Route service request failed: {exc}") from exc
     except Exception as exc:
         try:
             plan = get_transit_routes(origin, destination)
@@ -582,5 +582,5 @@ def transit_agent(payload: RouteRequest):
         except ValueError as route_exc:
             raise HTTPException(status_code=404, detail=str(route_exc)) from route_exc
         except requests.RequestException as route_exc:
-            raise HTTPException(status_code=502, detail=f"路线服务请求失败: {route_exc}") from route_exc
-        raise HTTPException(status_code=500, detail=f"服务器内部错误: {exc}") from exc
+            raise HTTPException(status_code=502, detail=f"Route service request failed: {route_exc}") from route_exc
+        raise HTTPException(status_code=500, detail=f"Internal server error: {exc}") from exc

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>北京一日游攻略</title>
+  <style>
+    :root {
+      --bg: #f2ecdf;
+      --paper: rgba(255, 251, 245, 0.86);
+      --ink: #1d1b18;
+      --muted: #6a6258;
+      --accent: #a33a2b;
+      --accent-2: #2f5d50;
+      --line: rgba(29, 27, 24, 0.1);
+      --shadow: 0 22px 60px rgba(60, 34, 20, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Serif SC", "Source Han Serif SC", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(163, 58, 43, 0.20), transparent 36%),
+        radial-gradient(circle at bottom right, rgba(47, 93, 80, 0.18), transparent 30%),
+        linear-gradient(135deg, #efe5d2, #f7f3ea 45%, #e8ddcc);
+      min-height: 100vh;
+    }
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 20px 72px;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 36px;
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 28px;
+      background: linear-gradient(140deg, rgba(255,251,245,0.95), rgba(250,243,230,0.82));
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(163, 58, 43, 0.12);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 13px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 {
+      max-width: 10ch;
+      margin-bottom: 16px;
+      font-size: clamp(38px, 7vw, 74px);
+      line-height: 0.98;
+    }
+    .lead {
+      max-width: 700px;
+      font-size: 18px;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(29,27,24,0.08);
+    }
+    .status.ok { color: var(--accent-2); }
+    .status.warn { color: var(--accent); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+    .card {
+      grid-column: span 12;
+      padding: 24px;
+      border-radius: 24px;
+      background: var(--paper);
+      border: 1px solid rgba(255,255,255,0.56);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .route-card { grid-column: span 6; }
+    .timeline {
+      display: grid;
+      gap: 16px;
+    }
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .timeline-item:first-child { border-top: 0; padding-top: 0; }
+    .timeline-time {
+      font-size: 24px;
+      color: var(--accent);
+    }
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .food-card {
+      min-height: 100%;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.62);
+      border: 1px solid rgba(29,27,24,0.06);
+    }
+    .meta, .small, .note { color: var(--muted); }
+    ol { padding-left: 22px; line-height: 1.8; }
+    @media (max-width: 900px) {
+      .route-card { grid-column: span 12; }
+      .food-grid { grid-template-columns: 1fr; }
+      .timeline-item { grid-template-columns: 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Beijing One Day Trip</p>
+      <h1>北京一日游 出行攻略</h1>
+      <p class="lead">以天安门东、颐和园、南锣鼓巷为主线，优先使用地铁串联城市地标、皇家园林与胡同街区，兼顾换乘效率和游玩节奏。</p>
+      <div class="status warn">高德 REST 当前不可用: USERKEY_PLAT_NOMATCH (10009)</div>
+    </section>
+    <section class="grid">
+      <section class="card">
+        <p class="eyebrow">全天安排</p>
+        <h2>时间轴</h2>
+        <div class="timeline"><div class="timeline-item">
+      <div class="timeline-time">08:30</div>
+      <div class="timeline-body">
+        <h4>天安门东集合</h4>
+        <p>先逛天安门广场和周边中轴线区域，控制步行节奏，避免上午体力消耗过快。</p>
+      </div>
+    </div><div class="timeline-item">
+      <div class="timeline-time">10:30</div>
+      <div class="timeline-body">
+        <h4>前往颐和园</h4>
+        <p>按地铁换乘方案出发，中午前后进入颐和园，优先浏览长廊、昆明湖和佛香阁视角。</p>
+      </div>
+    </div><div class="timeline-item">
+      <div class="timeline-time">13:00</div>
+      <div class="timeline-body">
+        <h4>颐和园午餐</h4>
+        <p>可优先考虑听鹂馆或西苑片区餐厅，用餐后继续补充体力。</p>
+      </div>
+    </div><div class="timeline-item">
+      <div class="timeline-time">15:30</div>
+      <div class="timeline-body">
+        <h4>前往南锣鼓巷</h4>
+        <p>从北宫门方向返回地铁，转线去南锣鼓巷，减少路面交通不确定性。</p>
+      </div>
+    </div><div class="timeline-item">
+      <div class="timeline-time">16:30</div>
+      <div class="timeline-body">
+        <h4>胡同漫游与小吃</h4>
+        <p>在南锣鼓巷、帽儿胡同、鼓楼东大街一带慢逛，补充咖啡或小吃。</p>
+      </div>
+    </div><div class="timeline-item">
+      <div class="timeline-time">19:00</div>
+      <div class="timeline-body">
+        <h4>晚餐与返程</h4>
+        <p>根据现场排队情况在胡同周边用餐，随后从南锣鼓巷站返程。</p>
+      </div>
+    </div></div>
+      </section>
+      <section class="card route-card">
+      <p class="eyebrow">地铁路线</p>
+      <h3>天安门东 -&gt; 颐和园</h3>
+      <p>建议乘坐地铁 1 号线转 4 号线大兴线，到北宫门站下车后步行进入颐和园北侧，整体换乘清晰、步行压力较小。</p>
+      <p class="meta">预计耗时: 约 45 至 60 分钟</p>
+      <ol><li>从天安门东站乘坐地铁 1 号线八通线，往古城或苹果园方向，乘坐 3 站到西单站。</li><li>在西单站换乘地铁 4 号线大兴线，往安河桥北方向，乘坐 10 站到北宫门站。</li><li>从北宫门站出站后步行约 10 至 15 分钟可达颐和园北宫门入口；如必须前往东宫门，可在西苑一带接驳短途公交或打车。</li></ol>
+      <p class="note">由于当前高德 MCP / REST key 返回 USERKEY_PLAT_NOMATCH，本段为基于公开地铁线路整理的兜底方案。</p>
+    </section><section class="card route-card">
+      <p class="eyebrow">地铁路线</p>
+      <h3>颐和园 -&gt; 南锣鼓巷</h3>
+      <p>建议从北宫门站上车，乘坐地铁 4 号线至平安里换乘 6 号线，在南锣鼓巷站下车。</p>
+      <p class="meta">预计耗时: 约 35 至 45 分钟</p>
+      <ol><li>从颐和园北宫门入口附近步行返回北宫门站。</li><li>乘坐地铁 4 号线大兴线，往天宫院方向，乘坐 8 站到平安里站。</li><li>在平安里站换乘地铁 6 号线，往潞城方向，乘坐 2 站到南锣鼓巷站。</li><li>从南锣鼓巷站出站后可直接步行进入胡同核心游览区。</li></ol>
+      <p class="note">该段同样使用公开线路信息作为兜底内容，等待有效高德 key 后可替换为实时规划结果。</p>
+    </section>
+      <section class="card">
+      <p class="eyebrow">周边美食</p>
+      <h3>颐和园</h3>
+      <div class="food-grid"><article class="food-card">
+          <h4>听鹂馆</h4>
+          <p class="meta">中式宫廷风味</p>
+          <p>景区内辨识度最高的老牌餐厅之一，适合安排午餐或休息。</p>
+          <p class="small">地址: 颐和园景区万寿山昆明湖区域内</p>
+          <p class="small">来源: 公开地图数据与常见景区信息整理</p>
+        </article><article class="food-card">
+          <h4>北华涮肉小院(西苑店)</h4>
+          <p class="meta">北京铜锅涮肉</p>
+          <p>靠近颐和园 / 西苑片区，适合游览后吃一顿偏北京风味的正餐。</p>
+          <p class="small">地址: 西苑交通枢纽周边</p>
+          <p class="small">来源: OpenStreetMap 周边餐饮 POI</p>
+        </article><article class="food-card">
+          <h4>云海肴</h4>
+          <p class="meta">云南菜</p>
+          <p>口味相对轻松，适合不想吃过重口味的游客。</p>
+          <p class="small">地址: 西苑商圈周边</p>
+          <p class="small">来源: OpenStreetMap 周边餐饮 POI</p>
+        </article></div>
+    </section><section class="card">
+      <p class="eyebrow">周边美食</p>
+      <h3>南锣鼓巷</h3>
+      <div class="food-grid"><article class="food-card">
+          <h4>马沙拉之香印度餐厅</h4>
+          <p class="meta">印度菜</p>
+          <p>辨识度高，适合作为胡同片区的异国风味选择。</p>
+          <p class="small">地址: 南锣鼓巷周边胡同片区</p>
+          <p class="small">来源: OpenStreetMap 周边餐饮 POI</p>
+        </article><article class="food-card">
+          <h4>馅老满</h4>
+          <p class="meta">北方饺子 / 家常菜</p>
+          <p>距离南锣鼓巷不远，适合希望吃到更稳妥北方口味的游客。</p>
+          <p class="small">地址: 安定门内大街</p>
+          <p class="small">来源: OpenStreetMap 周边餐饮 POI</p>
+        </article><article class="food-card">
+          <h4>Cafe Zarah</h4>
+          <p class="meta">咖啡简餐</p>
+          <p>适合下午茶、拍照和短暂停留。</p>
+          <p class="small">地址: 鼓楼东大街</p>
+          <p class="small">来源: OpenStreetMap 周边餐饮 POI</p>
+        </article></div>
+    </section>
+    </section>
+  </main>
+</body>
+</html>

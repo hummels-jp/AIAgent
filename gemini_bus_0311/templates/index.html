@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MapBox 路径规划</title>
+    <title>Mapbox Route Planner</title>
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -14,40 +14,40 @@
   </head>
   <body>
     <main class="container">
-      <h1>MapBox 路径规划</h1>
-      <p class="desc">输入起点和终点，返回多条公交/地铁换乘路线，并在地图中可视化。</p>
+      <h1>Mapbox Route Planner</h1>
+      <p class="desc">Enter an origin and destination to view multiple bus and subway transfer routes on the map.</p>
 
       <form id="route-form" class="card">
         <div class="field">
-          <label for="origin">起点</label>
-          <input id="origin" name="origin" type="text" placeholder="例如：北京南站" required />
+          <label for="origin">Origin</label>
+          <input id="origin" name="origin" type="text" placeholder="For example: Beijing South Railway Station" required />
         </div>
         <div class="field">
-          <label for="destination">终点</label>
-          <input id="destination" name="destination" type="text" placeholder="例如：国家图书馆" required />
+          <label for="destination">Destination</label>
+          <input id="destination" name="destination" type="text" placeholder="For example: National Library" required />
         </div>
-        <button id="submit-btn" type="submit">查询换乘</button>
+        <button id="submit-btn" type="submit">Search Routes</button>
       </form>
 
       <section class="card">
-        <h2>Agent 建议</h2>
-        <pre id="agent-reply">等待查询...</pre>
+        <h2>Agent Recommendation</h2>
+        <pre id="agent-reply">Waiting for a search...</pre>
       </section>
 
       <section class="card">
-        <h2>路线地图</h2>
+        <h2>Route Map</h2>
         <div class="map-locate-bar">
-          <input id="map-locate-input" type="text" placeholder="输入地址后定位地图，例如：神田駅" value="1 Negishimachi, Taihaku Ward, Sendai, Miyagi 982-0844" />
-          <button id="map-locate-btn" type="button">定位</button>
+          <input id="map-locate-input" type="text" placeholder="Enter an address to center the map, e.g. Kanda Station" value="1 Negishimachi, Taihaku Ward, Sendai, Miyagi 982-0844" />
+          <button id="map-locate-btn" type="button">Locate</button>
         </div>
-        <div id="data-source" class="data-source">数据来源：等待查询</div>
-        <div class="map-hint">鼠标点击地图点位后，可选择“设为起点”或“设为终点”。</div>
+        <div id="data-source" class="data-source">Data source: Waiting for a search</div>
+        <div class="map-hint">Click any point on the map to set it as the origin or destination.</div>
         <div id="map"></div>
       </section>
 
       <section class="card">
-        <h2>备选路线</h2>
-        <div id="route-list" class="route-list">暂无结果</div>
+        <h2>Alternative Routes</h2>
+        <div id="route-list" class="route-list">No results yet</div>
       </section>
     </main>
 
